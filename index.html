@@ -50,15 +50,20 @@
 
   <div class="sheet-body">
 
-    <div class="field">
-      <span class="lbl">Förare</span>
-      <div class="seg" id="whoSeg"></div>
+    <div class="whobar">
+      <div class="whobar-col">
+        <span class="lbl">Förare</span>
+        <div class="seg" id="whoSeg"></div>
+      </div>
+      <div class="whobar-col">
+        <span class="lbl">Bil</span>
+        <div class="seg" id="carSeg"></div>
+      </div>
     </div>
 
-    <div class="field">
-      <span class="lbl">Bil <em>regnr</em></span>
-      <div class="seg" id="carSeg"></div>
-    </div>
+    <!-- ---------- 1. START ---------- -->
+    <section class="step">
+      <h3><span class="num">1</span> Start</h3>
 
     <label class="field">
       <span class="lbl">Datum</span>
@@ -75,21 +80,7 @@
     </label>
 
     <label class="field">
-      <span class="lbl">Kund</span>
-      <input id="fKund" class="inp" list="dlKund" autocomplete="off" placeholder="t.ex. AIRFIL MALMÖ" enterkeyhint="next">
-      <datalist id="dlKund"></datalist>
-      <div class="chips" id="kundChips"></div>
-    </label>
-
-    <label class="field">
-      <span class="lbl">Syfte</span>
-      <input id="fSyfte" class="inp" list="dlSyfte" autocomplete="off" placeholder="t.ex. SAMARBETSMÖTE">
-      <datalist id="dlSyfte"></datalist>
-      <div class="chips" id="syfteChips"></div>
-    </label>
-
-    <label class="field">
-      <span class="lbl">Från <em>adress start</em></span>
+      <span class="lbl">Var startar du?</span>
       <div class="with-gps">
         <input id="fAdrStart" class="inp" list="dlAdrStart" autocomplete="off" placeholder="Startadress">
         <button type="button" class="gps-btn" id="gpsStart" title="Hämta min plats">
@@ -100,8 +91,19 @@
       <div class="chips" id="fromChips"></div>
     </label>
 
+    <label class="field big">
+      <span class="lbl">Mätarställning vid start</span>
+      <input id="fMatStart" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="t.ex. 61046">
+      <div class="hint" id="startHint"></div>
+    </label>
+    </section>
+
+    <!-- ---------- 2. FRAMME ---------- -->
+    <section class="step">
+      <h3><span class="num">2</span> Framme</h3>
+
     <label class="field">
-      <span class="lbl">Till <em>adress stopp</em></span>
+      <span class="lbl">Var är du framme?</span>
       <div class="with-gps">
         <input id="fAdrStopp" class="inp" list="dlAdrStopp" autocomplete="off" placeholder="Slutadress">
         <button type="button" class="gps-btn" id="gpsStopp" title="Jag är framme – hämta min plats">
@@ -112,21 +114,46 @@
       <div class="chips" id="toChips"></div>
     </label>
 
+    <label class="field big">
+      <span class="lbl">Mätarställning vid stopp</span>
+      <input id="fMatStopp" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="t.ex. 61493">
+    </label>
+
     <div class="field">
-      <span class="lbl">Mätarställning</span>
-      <div class="meter-row">
-        <div class="meter">
-          <span class="sub">Start</span>
-          <input id="fMatStart" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="0">
-        </div>
-        <div class="meter">
-          <span class="sub">Stopp</span>
-          <input id="fMatStopp" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="0">
-        </div>
-      </div>
       <div class="km-out" id="kmOut"><b>0</b> km</div>
+      <div class="hint" id="fuelOut"></div>
       <div class="hint" id="kmHint"></div>
     </div>
+    </section>
+
+    <!-- ---------- 3. UPPDRAG ---------- -->
+    <section class="step">
+      <h3><span class="num">3</span> Vad gällde resan?</h3>
+
+    <label class="field">
+      <span class="lbl">Kund <em>företag</em></span>
+      <input id="fKund" class="inp" list="dlKund" autocomplete="off" placeholder="t.ex. AIRFIL MALMÖ" enterkeyhint="next">
+      <datalist id="dlKund"></datalist>
+      <div class="chips" id="kundChips"></div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">Syfte <em>ärende</em></span>
+      <input id="fSyfte" class="inp" list="dlSyfte" autocomplete="off" placeholder="t.ex. LEVERANS FILTER">
+      <datalist id="dlSyfte"></datalist>
+      <div class="chips" id="syfteChips"></div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">Verksamhet</span>
+      <input id="fVerksamhet" class="inp" list="dlVerk" autocomplete="off" placeholder="FILTER">
+      <datalist id="dlVerk"></datalist>
+    </label>
+    </section>
+
+    <!-- ---------- 4. KOSTNADER ---------- -->
+    <section class="step">
+      <h3><span class="num">4</span> Kostnader <em>valfritt</em></h3>
 
     <div class="field">
       <span class="lbl">Tull</span>
@@ -139,15 +166,10 @@
     </div>
 
     <label class="field">
-      <span class="lbl">Trängselskatt <em>valfritt</em></span>
+      <span class="lbl">Trängselskatt</span>
       <input id="fTrangsel" class="inp num" inputmode="decimal" placeholder="0 kr">
     </label>
-
-    <label class="field">
-      <span class="lbl">Verksamhet</span>
-      <input id="fVerksamhet" class="inp" list="dlVerk" autocomplete="off" placeholder="FILTER">
-      <datalist id="dlVerk"></datalist>
-    </label>
+    </section>
 
     <button id="btnSave" class="btn btn-primary btn-block">Spara resa</button>
     <button id="btnSaveReturn" class="btn btn-ghost btn-block">Spara + skapa returresa</button>
@@ -176,17 +198,27 @@
       <div class="seg" id="sDefaultDriver"></div>
     </div>
     <div class="field">
-      <span class="lbl">Bilar i appen</span>
+      <span class="lbl">Bil 1</span>
+      <input id="sCar1" class="inp" placeholder="WXE84R" autocomplete="off" autocapitalize="characters">
       <div class="two">
-        <input id="sCar1" class="inp" placeholder="WXE84R" autocomplete="off" autocapitalize="characters">
         <span class="rate"><input id="sMil1" class="inp num" inputmode="decimal" placeholder="25"><i>kr/mil</i></span>
+        <span class="rate"><input id="sForb1" class="inp num" inputmode="decimal" placeholder="0,62"><i>l/mil</i></span>
       </div>
-      <div class="two">
-        <input id="sCar2" class="inp" placeholder="Bil 2 – regnr" autocomplete="off" autocapitalize="characters">
-        <span class="rate"><input id="sMil2" class="inp num" inputmode="decimal" placeholder="0"><i>kr/mil</i></span>
-      </div>
-      <div class="hint">Sätt 0 kr/mil på tjänstebil eller lastbil – då räknas ingen milersättning.</div>
     </div>
+    <div class="field">
+      <span class="lbl">Bil 2</span>
+      <input id="sCar2" class="inp" placeholder="Bil 2 – regnr" autocomplete="off" autocapitalize="characters">
+      <div class="two">
+        <span class="rate"><input id="sMil2" class="inp num" inputmode="decimal" placeholder="0"><i>kr/mil</i></span>
+        <span class="rate"><input id="sForb2" class="inp num" inputmode="decimal" placeholder="2,8"><i>l/mil</i></span>
+      </div>
+      <div class="hint">Sätt 0 kr/mil på företagsbilen – den ska bokföras, inte ge milersättning.</div>
+    </div>
+    <label class="field">
+      <span class="lbl">Dieselpris</span>
+      <span class="rate wide"><input id="sDiesel" class="inp num" inputmode="decimal" placeholder="20,50"><i>kr/liter</i></span>
+      <div class="hint">Används för att uppskatta bränslekostnaden per resa. Ingen ersättning.</div>
+    </label>
     <div class="field">
       <span class="lbl">Standardbil</span>
       <div class="seg" id="sDefaultCar"></div>

@@ -132,6 +132,36 @@ button{font:inherit;color:inherit}
   padding:14px 14px calc(28px + var(--safe-b));
 }
 
+/* ---------- steg ---------- */
+.whobar{
+  display:flex;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);padding:12px;margin-bottom:18px;
+}
+.whobar-col{flex:1;min-width:0}
+.whobar-col .lbl{margin-bottom:4px}
+.whobar .seg{border:0;padding:0;background:transparent;gap:4px}
+.whobar .seg button{min-height:42px;font-size:14px;padding:0 4px;border:1px solid var(--line)}
+.whobar .seg button.on{border-color:var(--yellow-dk)}
+
+.step{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 14px 4px;margin-bottom:16px;
+}
+.step h3{
+  display:flex;align-items:center;gap:10px;margin:0 0 16px;
+  font-size:17px;font-weight:800;
+}
+.step h3 em{font-style:normal;font-size:14px;font-weight:500;color:var(--ink-3)}
+.step h3 .num{
+  width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+  background:var(--yellow);color:#111;font-size:14px;font-weight:800;
+  display:grid;place-items:center;
+}
+.step .inp{background:var(--bg)}
+.step .chip{background:var(--bg)}
+.step .gps-btn,.step .step-btn,.step .btn-tull{background:var(--bg)}
+.field.big .inp{font-size:26px;min-height:64px;letter-spacing:.03em}
+
 /* ---------- fält ---------- */
 .field{display:block;margin-bottom:18px}
 .lbl{
@@ -194,6 +224,8 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
 .two{display:flex;gap:10px;margin-bottom:10px}
 .two:last-of-type{margin-bottom:0}
 .two .inp{flex:1;min-width:0}
+.two{margin-top:10px}
+.two .rate{flex:1}
 .rate{position:relative;flex:0 0 124px;display:block}
 .rate.wide{flex:none;width:100%;display:block}
 .rate .inp{width:100%;padding-right:56px}
@@ -236,6 +268,12 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
 .recap .row{display:flex;justify-content:space-between;padding:5px 0;font-size:15px}
 .recap .row b{font-variant-numeric:tabular-nums}
 .recap .row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700;font-size:17px}
+.recap .row.sub{border-top:1px solid var(--line);margin-top:4px;padding-top:8px;font-weight:700}
+.recap .head{
+  margin:16px 0 4px;font-size:12px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.recap .note{font-size:13px;color:var(--ink-3);padding:2px 0 4px}
 
 .toast{
   position:fixed;left:50%;bottom:calc(var(--actionbar-h) + 12px);transform:translateX(-50%);

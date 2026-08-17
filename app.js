@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.4.0';
+  var VER = '1.5.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -26,10 +26,10 @@
     }
     // bilarna är {nr, mil} sedan v1.3 – äldre versioner sparade bara regnumret
     settings.cars = settings.cars.map(function (c, i) {
-      if (typeof c === 'string') return { nr: c, mil: i === 0 ? 25 : 0 };
-      return { nr: c.nr || '', mil: numOf(c.mil) };
+      if (typeof c === 'string') return { nr: c, mil: i === 0 ? 25 : 0, forb: '' };
+      return { nr: c.nr || '', mil: numOf(c.mil), forb: numOf(c.forb) || '' };
     }).filter(function (c) { return !!c.nr; });
-    if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25 }];
+    if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25, forb: '' }];
     delete settings.regs;
     if (!settings.regnr || carNames().indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0].nr;
     if (settings.tull == null) settings.tull = '';
@@ -39,8 +39,16 @@
   }
   /* kr per mil för ett regnr – 0 om bilen inte ger milersättning */
   function rateFor(nr) {
-    var c = (settings.cars || []).filter(function (x) { return x.nr === nr; })[0];
+    var c = carFor(nr);
     return c ? numOf(c.mil) : 0;
+  }
+  function carFor(nr) {
+    return (settings.cars || []).filter(function (x) { return x.nr === nr; })[0] || null;
+  }
+  /* liter per mil – tom om förbrukningen inte är ifylld */
+  function forbFor(nr) {
+    var c = carFor(nr);
+    return c ? numOf(c.forb) : 0;
   }
   function drivers() {
     return (settings.drivers || []).filter(function (d) { return !!d; });
@@ -60,6 +68,16 @@
     var r = rateFor(t.regnr);
     return r ? Math.round(numOf(t.km) / 10 * r * 100) / 100 : 0;
   }
+  /* uppskattad dieselåtgång och kostnad för en resa */
+  function literFor(t) {
+    var f = forbFor(t.regnr);
+    return f ? Math.round(numOf(t.km) / 10 * f * 10) / 10 : 0;
+  }
+  function fuelFor(t) {
+    var l = literFor(t), p = numOf(settings.diesel);
+    return (l && p) ? Math.round(l * p * 100) / 100 : 0;
+  }
+  function dec(v, n) { return (Math.round(v * Math.pow(10, n)) / Math.pow(10, n)).toString().replace('.', ','); }
   /* segmenterad väljare: renderar knappar och returnerar vald via onPick */
   function segment(el, items, active, onPick) {
     el.innerHTML = '';
@@ -219,6 +237,9 @@
     $('fAdrStopp').value = t.adressStopp || '';
     $('fMatStart').value = t.matStart || '';
     $('fMatStopp').value = t.matStopp || '';
+    $('startHint').textContent = (!id && prev && t.matStart && t.matStart === prev.matStopp)
+      ? 'Ifylld från förra resan, som slutade på ' + prev.matStopp + '.'
+      : 'Läs av mätaren innan du kör.';
     $('fTull').value = t.tull || '';
     $('sheetTrip').dataset.tullAntal = t.tullAntal || 0;
     renderTull();
@@ -235,7 +256,7 @@
     $('sheetTrip').dataset.regnr = regnr;
 
     segment($('whoSeg'), list, person, function (v) { $('sheetTrip').dataset.person = v; });
-    segment($('carSeg'), carList, regnr, function (v) { $('sheetTrip').dataset.regnr = v; });
+    segment($('carSeg'), carList, regnr, function (v) { $('sheetTrip').dataset.regnr = v; calcKm(); });
     if (carList.length < 2) addCarButton();
 
     fillDatalist($('dlKund'), freqList('kund'));
@@ -342,11 +363,20 @@
   function calcKm() {
     var a = intOf($('fMatStart').value), b = intOf($('fMatStopp').value);
     var out = $('kmOut'), hint = $('kmHint');
+    showFuel(0);
     if (!a && !b) { out.className = 'km-out'; out.innerHTML = '<b>0</b> km'; hint.textContent = 'Fyll i mätarställning start och stopp.'; return; }
     if (b && a && b < a) { out.className = 'km-out bad'; out.innerHTML = '<b>' + (b - a) + '</b> km'; hint.textContent = 'Stoppvärdet är lägre än startvärdet.'; return; }
     var km = (a && b) ? b - a : 0;
     out.className = 'km-out'; out.innerHTML = '<b>' + km + '</b> km';
     hint.textContent = km ? '' : 'Fyll i mätarställning stopp.';
+    showFuel(km);
+  }
+  /* uppskattad dieselkostnad för resan som fylls i just nu */
+  function showFuel(km) {
+    var nr = $('sheetTrip').dataset.regnr, f = forbFor(nr), p = numOf(settings.diesel);
+    if (!km || !f || !p) { $('fuelOut').textContent = ''; return; }
+    var liter = Math.round(km / 10 * f * 10) / 10;
+    $('fuelOut').textContent = 'Bränsle ca ' + dec(liter, 1) + ' l · ' + kr(liter * p) + ' (' + nr + ')';
   }
 
   function readForm() {
@@ -410,8 +440,11 @@
     var c = settings.cars || [];
     $('sCar1').value = (c[0] && c[0].nr) || '';
     $('sMil1').value = (c[0] && c[0].mil) || '';
+    $('sForb1').value = (c[0] && c[0].forb) || '';
     $('sCar2').value = (c[1] && c[1].nr) || '';
     $('sMil2').value = (c[1] && c[1].mil) || '';
+    $('sForb2').value = (c[1] && c[1].forb) || '';
+    $('sDiesel').value = settings.diesel || '';
     renderDefaultCar(settings.regnr);
     $('sHome').value = settings.home || '';
     $('sVerk').value = settings.verk || '';
@@ -438,15 +471,19 @@
   }
 
   function storeSettings() {
+    var first = !settings.setup;
     var d1 = up($('sDriver1').value).toUpperCase(), d2 = up($('sDriver2').value).toUpperCase();
     settings.drivers = [d1 || 'EBBA', d2 || 'GEORGE'].filter(Boolean);
     var def = $('sDefaultDriver').dataset.value || '';
     settings.person = settings.drivers.indexOf(def) >= 0 ? def : settings.drivers[0];
 
     var c1 = up($('sCar1').value).toUpperCase(), c2 = up($('sCar2').value).toUpperCase();
-    settings.cars = [{ nr: c1, mil: numOf($('sMil1').value) }, { nr: c2, mil: numOf($('sMil2').value) }]
-      .filter(function (c) { return !!c.nr; });
-    if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25 }];
+    settings.cars = [
+      { nr: c1, mil: numOf($('sMil1').value), forb: numOf($('sForb1').value) || '' },
+      { nr: c2, mil: numOf($('sMil2').value), forb: numOf($('sForb2').value) || '' }
+    ].filter(function (c) { return !!c.nr; });
+    if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25, forb: '' }];
+    settings.diesel = numOf($('sDiesel').value) || '';
     var dc = $('sDefaultCar').dataset.value || '';
     settings.regnr = carNames().indexOf(dc) >= 0 ? dc : settings.cars[0].nr;
     settings.home = up($('sHome').value);
@@ -456,7 +493,11 @@
     settings.setup = true;
     saveSettings();
     close($('sheetSettings'));
-    toast('Inställningar sparade');
+    if (first && !trips.length) {
+      // första gången: gå direkt vidare till resan istället för en tom lista
+      toast('Klart – fyll i din första resa', 3000);
+      setTimeout(function () { openTrip(null); }, 350);
+    } else toast('Inställningar sparade');
   }
 
   /* ---------------- skicka in ---------------- */
@@ -496,7 +537,7 @@
     });
   }
 
-  /* sammanställning: milersättning per bil + utlägg */
+  /* sammanställning i tre delar: milersättning, utlägg och bränsle för bokföringen */
   function summaryLines(sel) {
     var byCar = {}, order = [], tr = 0, tull = 0, tullN = 0, i;
     for (i = 0; i < sel.length; i++) {
@@ -507,19 +548,51 @@
       tull += numOf(t.tull);
       tullN += parseInt(t.tullAntal, 10) || 0;
     }
-    var lines = [], totErs = 0;
-    order.forEach(function (nr) {
-      var km = byCar[nr], rate = rateFor(nr), belopp = rate ? Math.round(km / 10 * rate * 100) / 100 : 0;
-      totErs += belopp;
-      lines.push({
-        label: nr + ' - ' + km + ' km' + (rate ? ' (' + mil(km) + ' mil x ' + rate + ' kr/mil)' : ''),
-        value: rate ? kr(belopp) : 'ingen milersättning'
+
+    var lines = [], totErs = 0, utlagg = tr + tull;
+
+    /* milersättning – bara bilar med kr/mil */
+    var medErs = order.filter(function (nr) { return rateFor(nr) > 0; });
+    if (medErs.length) {
+      lines.push({ head: 'Milersättning' });
+      medErs.forEach(function (nr) {
+        var km = byCar[nr], rate = rateFor(nr), belopp = Math.round(km / 10 * rate * 100) / 100;
+        totErs += belopp;
+        lines.push({ label: nr + ' - ' + km + ' km (' + mil(km) + ' mil x ' + rate + ' kr/mil)', value: kr(belopp) });
       });
+    }
+    var utanErs = order.filter(function (nr) { return !rateFor(nr); });
+    utanErs.forEach(function (nr) {
+      lines.push({ note: nr + ' - ' + byCar[nr] + ' km, företagsbil utan milersättning' });
     });
-    if (tr) lines.push({ label: 'Trängselskatt', value: kr(tr) });
-    if (tull) lines.push({ label: 'Tull' + (tullN ? ' (' + tullN + ' passager)' : ''), value: kr(tull) });
+
+    /* utlägg – redovisas var för sig men ingår i summan */
+    if (utlagg) {
+      lines.push({ head: 'Utlägg' });
+      if (tr) lines.push({ label: 'Trängselskatt', value: kr(tr) });
+      if (tull) lines.push({ label: 'Tull' + (tullN ? ' (' + tullN + (tullN === 1 ? ' passage)' : ' passager)') : ''), value: kr(tull) });
+      if (tr && tull) lines.push({ label: 'Summa utlägg', value: kr(utlagg), sub: true });
+    }
+
     lines.push({ rule: true });
-    lines.push({ label: 'Summa att ersätta', value: kr(totErs + tr + tull), bold: true });
+    lines.push({ label: 'Att ersätta', value: kr(totErs + utlagg), bold: true });
+
+    /* bränsle – bokföring, ingen ersättning */
+    var pris = numOf(settings.diesel), fuelCars = order.filter(function (nr) { return forbFor(nr) > 0; });
+    if (pris && fuelCars.length) {
+      lines.push({ head: 'Beräknad bränslekostnad (bokföring)' });
+      var totL = 0, totKost = 0;
+      fuelCars.forEach(function (nr) {
+        var km = byCar[nr], f = forbFor(nr);
+        var liter = Math.round(km / 10 * f * 10) / 10, kost = Math.round(liter * pris * 100) / 100;
+        totL += liter; totKost += kost;
+        lines.push({ label: nr + ' - ' + dec(liter, 1) + ' l (' + dec(f, 2) + ' l/mil)', value: kr(kost) });
+      });
+      if (fuelCars.length > 1) {
+        lines.push({ label: 'Summa bränsle ' + dec(totL, 1) + ' l', value: kr(totKost), sub: true });
+      }
+      lines.push({ note: 'Uppskattning på ' + kr(pris) + '/liter diesel. Ingår inte i ersättningen.' });
+    }
     return lines;
   }
 
@@ -535,7 +608,10 @@
     if (sel.length) {
       lines.forEach(function (l) {
         if (l.rule) return;
-        html += '<div class="row' + (l.bold ? ' total' : '') + '"><span>' + esc(l.label) + '</span><b>' + esc(l.value) + '</b></div>';
+        if (l.head) { html += '<div class="head">' + esc(l.head) + '</div>'; return; }
+        if (l.note) { html += '<div class="note">' + esc(l.note) + '</div>'; return; }
+        html += '<div class="row' + (l.bold ? ' total' : l.sub ? ' sub' : '') + '">' +
+                '<span>' + esc(l.label) + '</span><b>' + esc(l.value) + '</b></div>';
       });
     }
     $('sendRecap').innerHTML = html;
@@ -556,8 +632,9 @@
         adressStart: t.adressStart, adressStopp: t.adressStopp,
         trangsel: t.trangsel ? KJPdf.fmtKr(numOf(t.trangsel)) : '',
         tull: t.tull ? KJPdf.fmtKr(numOf(t.tull)) : '',
+        bransle: fuelFor(t) ? KJPdf.fmtKr(Math.round(fuelFor(t))) : '',
         person: t.person, regnr: t.regnr,
-        _km: numOf(t.km), _trangsel: numOf(t.trangsel), _tull: numOf(t.tull)
+        _km: numOf(t.km), _trangsel: numOf(t.trangsel), _tull: numOf(t.tull), _bransle: fuelFor(t)
       };
     });
   }
@@ -584,7 +661,10 @@
     var km = 0; r.sel.forEach(function (t) { km += numOf(t.km); });
     var sum = '';
     summaryLines(r.sel).forEach(function (l) {
-      if (!l.rule) sum += l.label + ': ' + l.value + '\n';
+      if (l.rule) return;
+      if (l.head) { sum += '\n' + l.head.toUpperCase() + '\n'; return; }
+      if (l.note) { sum += l.note + '\n'; return; }
+      sum += l.label + ': ' + l.value + '\n';
     });
     return 'Hej,\n\nHär kommer körjournal för ' + periodLabel().toLowerCase() + '.\n' +
            'Förare: ' + r.pers + '\n' +
@@ -635,11 +715,11 @@
 
   function tsv() {
     var head = ['KUND', 'SYFTE', 'VERKSAMHET', 'DATUM', 'MÄTARSTÄLLNING START', 'MÄTARSTÄLLNING STOPP',
-                'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT', 'TULL', 'PERSON', 'REGNR'];
+                'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT', 'TULL', 'BRÄNSLE CA', 'PERSON', 'REGNR'];
     var lines = [head.join('\t')];
     pdfRows(selection()).forEach(function (r) {
       lines.push([r.kund, r.syfte, r.verksamhet, r.datum, r.matStart, r.matStopp, r.km,
-                  r.adressStart, r.adressStopp, r.trangsel, r.tull, r.person, r.regnr].join('\t'));
+                  r.adressStart, r.adressStopp, r.trangsel, r.tull, r.bransle, r.person, r.regnr].join('\t'));
     });
     return lines.join('\n');
   }

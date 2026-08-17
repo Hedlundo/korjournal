@@ -141,8 +141,8 @@
   /* ---------- körjournal ---------- */
   var COLS = [
     { k: 'kund',        t: 'KUND',              w: 88 },
-    { k: 'syfte',       t: 'SYFTE',             w: 126 },
-    { k: 'verksamhet',  t: 'VERKSAMHET',        w: 50 },
+    { k: 'syfte',       t: 'SYFTE',             w: 120 },
+    { k: 'verksamhet',  t: 'VERKSAMHET',        w: 58 },
     { k: 'datum',       t: 'DATUM',             w: 42, a: 'r' },
     { k: 'matStart',    t: 'MÄTARE START',      w: 48, a: 'r' },
     { k: 'matStopp',    t: 'MÄTARE STOPP',      w: 48, a: 'r' },
@@ -151,6 +151,7 @@
     { k: 'adressStopp', t: 'ADRESS STOPP',      w: 104 },
     { k: 'trangsel',    t: 'TRÄNGSELSKATT',     w: 44, a: 'r' },
     { k: 'tull',        t: 'TULL',              w: 34, a: 'r' },
+    { k: 'bransle',     t: 'BRÄNSLE CA',        w: 40, a: 'r' },
     { k: 'person',      t: 'PERSON',            w: 68 },
     { k: 'regnr',       t: 'REGNR',             w: 40 }
   ];
@@ -206,7 +207,7 @@
 
     header();
 
-    var totKm = 0, totTr = 0, totTull = 0;
+    var totKm = 0, totTr = 0, totTull = 0, totFuel = 0;
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r], cells = [], maxLines = 1;
       for (i = 0; i < COLS.length; i++) {
@@ -229,6 +230,7 @@
       totKm += Number(row._km) || 0;
       totTr += Number(row._trangsel) || 0;
       totTull += Number(row._tull) || 0;
+      totFuel += Number(row._bransle) || 0;
     }
 
     /* summarad */
@@ -239,23 +241,27 @@
     page.text('km', xs[7] + PAD, y - 12, 7, false, 'l', null, 0.75);
     page.text(totTr ? fmtKr(totTr) : '', xs[9] + w[9] - PAD, y - 12, 8, true, 'r', null, 1);
     page.text(totTull ? fmtKr(totTull) : '', xs[10] + w[10] - PAD, y - 12, 8, true, 'r', null, 1);
+    page.text(totFuel ? fmtKr(Math.round(totFuel)) : '', xs[11] + w[11] - PAD, y - 12, 8, true, 'r', null, 1);
     y -= 18;
 
     /* sammanställning av ersättning */
     var sum = meta.summary || [];
     if (sum.length) {
-      var need = 30 + sum.length * 14;
+      var need = 30 + sum.length * 15;
       if (y - need < M + 26) header(false);
       y -= 22;
       page.text('SAMMANSTÄLLNING', M, y, 9, true);
-      y -= 6;
+      y -= 4;
       var vx = M + 330;
       for (var s = 0; s < sum.length; s++) {
         var ln = sum[s];
         if (ln.rule) { page.line(M, y - 4, vx, y - 4, 0.7, 0.6); y -= 9; continue; }
+        if (ln.head) { y -= 17; page.text(ln.head.toUpperCase(), M + 2, y, 7.5, true, 'l', 320, 0.45); continue; }
+        if (ln.note) { y -= 13; page.text(ln.note, M + 2, y, 7.5, false, 'l', 320, 0.45); continue; }
         y -= 14;
-        page.text(ln.label, M + 2, y, ln.bold ? 9 : 8.5, !!ln.bold, 'l', 300);
-        page.text(ln.value, vx, y, ln.bold ? 9 : 8.5, !!ln.bold, 'r', 130);
+        page.text(ln.label, M + 2, y, ln.bold ? 9 : 8.5, !!(ln.bold || ln.sub), 'l', 300);
+        page.text(ln.value, vx, y, ln.bold ? 9 : 8.5, !!(ln.bold || ln.sub), 'r', 130);
+        if (ln.sub) { page.line(M + 200, y + 11, vx, y + 11, 0.75, 0.4); }
       }
     }
 

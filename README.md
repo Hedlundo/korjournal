@@ -27,11 +27,19 @@ webbappar som inte är öppna. För automatisk resegistrering krävs en riktig n
 ## Ersättning
 
 Varje bil har ett belopp per mil i Inställningar (WXE84R = 25 kr/mil). Sätt 0 kr/mil på
-tjänstebil eller lastbil, så räknas ingen milersättning för den. Tull registreras med en knapp
-per passage och beloppet fylls i från standardavgiften i Inställningar.
+företagsbilen, så räknas ingen milersättning för den – körningen redovisas ändå. Tull
+registreras med en knapp per passage och beloppet fylls i från standardavgiften i Inställningar.
 
-Sammanställningen – milersättning per bil, trängselskatt, tull och summa att ersätta – visas i
-appen, i PDF:en och i mejltexten.
+Sammanställningen är uppdelad i tre delar och visas i appen, i PDF:en och i mejltexten:
+
+* **Milersättning** per bil
+* **Utlägg** – trängselskatt och tull var för sig, med delsumma
+* **Att ersätta** – milersättning + utlägg
+
+Därunder ligger **beräknad bränslekostnad** för bokföringen: varje bil har en förbrukning i
+l/mil och dieselpriset sätts en gång i Inställningar. Kostnaden räknas per resa (syns direkt i
+formuläret under kilometerrutan), som egen kolumn i PDF:en och som summa per bil. Den ingår
+inte i ersättningen.
 
 ## Skicka in
 
