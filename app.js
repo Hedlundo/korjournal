@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.0.0';
+  var VER = '1.1.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -18,6 +18,28 @@
     try { settings = JSON.parse(localStorage.getItem(K_SET)) || {}; } catch (e) { settings = {}; }
     if (!settings.verk) settings.verk = 'FILTER';
     if (!settings.regs) settings.regs = [];
+    if (!settings.drivers || !settings.drivers.length) settings.drivers = ['EBBA', 'GEORGE'];
+    if (!settings.person) settings.person = settings.drivers[0];
+  }
+  function drivers() {
+    return (settings.drivers || []).filter(function (d) { return !!d; });
+  }
+  /* segmenterad väljare: renderar knappar och returnerar vald via onPick */
+  function segment(el, items, active, onPick) {
+    el.innerHTML = '';
+    items.forEach(function (v) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = v === active ? 'on' : '';
+      b.textContent = v;
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        Array.prototype.forEach.call(el.children, function (c) { c.classList.remove('on'); });
+        b.classList.add('on');
+        onPick(v);
+      });
+      el.appendChild(b);
+    });
   }
   function saveTrips() { localStorage.setItem(K_TRIPS, JSON.stringify(trips)); }
   function saveSettings() { localStorage.setItem(K_SET, JSON.stringify(settings)); }
@@ -161,14 +183,25 @@
     $('fTrangsel').value = t.trangsel || '';
     $('fVerksamhet').value = t.verksamhet || settings.verk || '';
 
-    var person = t.person || settings.person || '';
+    var list = drivers();
+    var person = t.person || settings.person || list[0] || '';
+    if (list.indexOf(person) === -1 && person) list = list.concat([person]);
     var regnr = t.regnr || settings.regnr || '';
-    $('whoBar').innerHTML =
-      '<b>' + esc(person || 'Ingen förare vald') + '</b><span class="sep">·</span><b>' +
-      esc(regnr || 'inget regnr') + '</b><button type="button" id="whoEdit">Ändra</button>';
-    $('whoEdit').addEventListener('click', function (e) { e.preventDefault(); openSettings(); });
     $('sheetTrip').dataset.person = person;
     $('sheetTrip').dataset.regnr = regnr;
+
+    segment($('whoSeg'), list, person, function (v) { $('sheetTrip').dataset.person = v; });
+    $('whoReg').textContent = 'Bil: ' + (regnr || 'inget regnr valt');
+    $('whoEdit').onclick = function (e) {
+      e.preventDefault();
+      var regs = settings.regs || [];
+      if (regs.length > 1) {                       // fler bilar → växla direkt
+        var i = regs.indexOf($('sheetTrip').dataset.regnr);
+        var next = regs[(i + 1) % regs.length];
+        $('sheetTrip').dataset.regnr = next;
+        $('whoReg').textContent = 'Bil: ' + next;
+      } else openSettings();
+    };
 
     fillDatalist($('dlKund'), freqList('kund'));
     fillDatalist($('dlSyfte'), freqList('syfte'));
@@ -249,7 +282,9 @@
 
   /* ---------------- inställningar ---------------- */
   function openSettings() {
-    $('sPerson').value = settings.person || '';
+    $('sDriver1').value = (settings.drivers || [])[0] || '';
+    $('sDriver2').value = (settings.drivers || [])[1] || '';
+    renderDefaultDriver(settings.person);
     $('sRegnr').value = settings.regnr || '';
     $('sHome').value = settings.home || '';
     $('sVerk').value = settings.verk || '';
@@ -258,8 +293,20 @@
     $('verInfo').textContent = 'Körjournal ' + VER + ' · ' + trips.length + ' resor sparade i den här telefonen';
     open($('sheetSettings'));
   }
+  function renderDefaultDriver(active) {
+    var d1 = up($('sDriver1').value).toUpperCase(), d2 = up($('sDriver2').value).toUpperCase();
+    var list = [d1, d2].filter(Boolean);
+    if (!list.length) list = ['EBBA', 'GEORGE'];
+    if (list.indexOf(active) === -1) active = list[0];
+    $('sDefaultDriver').dataset.value = active;
+    segment($('sDefaultDriver'), list, active, function (v) { $('sDefaultDriver').dataset.value = v; });
+  }
+
   function storeSettings() {
-    settings.person = up($('sPerson').value).toUpperCase();
+    var d1 = up($('sDriver1').value).toUpperCase(), d2 = up($('sDriver2').value).toUpperCase();
+    settings.drivers = [d1 || 'EBBA', d2 || 'GEORGE'].filter(Boolean);
+    var def = $('sDefaultDriver').dataset.value || '';
+    settings.person = settings.drivers.indexOf(def) >= 0 ? def : settings.drivers[0];
     settings.regnr = up($('sRegnr').value).toUpperCase();
     settings.home = up($('sHome').value);
     settings.verk = up($('sVerk').value);
@@ -434,7 +481,7 @@
     load(); render();
 
     $('btnNew').addEventListener('click', function () {
-      if (!settings.person || !settings.regnr) { toast('Fyll i förare och regnr först'); openSettings(); return; }
+      if (!settings.regnr) { toast('Fyll i regnr först'); openSettings(); return; }
       openTrip(null);
     });
     $('btnSend').addEventListener('click', openSend);
@@ -466,6 +513,8 @@
     });
 
     $('btnSaveSettings').addEventListener('click', storeSettings);
+    $('sDriver1').addEventListener('input', function () { renderDefaultDriver($('sDefaultDriver').dataset.value); });
+    $('sDriver2').addEventListener('input', function () { renderDefaultDriver($('sDefaultDriver').dataset.value); });
     $('sendPeriod').addEventListener('change', updateRecap);
     $('sendPerson').addEventListener('change', updateRecap);
     $('btnMakePdf').addEventListener('click', sendPdf);
@@ -504,8 +553,9 @@
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     }
-    if (!settings.person) setTimeout(openSettings, 400);
+    if (!settings.regnr) setTimeout(openSettings, 400);
   }
 
   document.addEventListener('DOMContentLoaded', init);
 })();
+

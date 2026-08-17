@@ -50,7 +50,11 @@
 
   <div class="sheet-body">
 
-    <div class="who" id="whoBar"></div>
+    <div class="field">
+      <span class="lbl">Förare</span>
+      <div class="seg" id="whoSeg"></div>
+      <div class="carline"><span id="whoReg"></span><button type="button" id="whoEdit">Ändra</button></div>
+    </div>
 
     <label class="field">
       <span class="lbl">Datum</span>
@@ -134,10 +138,18 @@
     <button class="link-btn strong" id="btnSaveSettings">Spara</button>
   </div>
   <div class="sheet-body">
-    <label class="field">
-      <span class="lbl">Förare</span>
-      <input id="sPerson" class="inp" placeholder="FÖRNAMN EFTERNAMN" autocomplete="name">
-    </label>
+    <div class="field">
+      <span class="lbl">Förare i appen</span>
+      <div class="two">
+        <input id="sDriver1" class="inp" placeholder="EBBA" autocomplete="off">
+        <input id="sDriver2" class="inp" placeholder="GEORGE" autocomplete="off">
+      </div>
+      <div class="hint">Namnen du kan välja mellan när du registrerar en resa.</div>
+    </div>
+    <div class="field">
+      <span class="lbl">Standardförare</span>
+      <div class="seg" id="sDefaultDriver"></div>
+    </div>
     <label class="field">
       <span class="lbl">Registreringsnummer</span>
       <input id="sRegnr" class="inp" placeholder="ABC123">

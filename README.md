@@ -9,8 +9,9 @@ KUND · SYFTE · VERKSAMHET · DATUM · MÄTARSTÄLLNING START · MÄTARSTÄLLNI
 · ADRESS START · ADRESS STOPP · TRÄNGSELSKATT · PERSON · REGNR
 
 KM räknas ut automatiskt. Mätarställning start och adress start förifylls från förra resan.
-PERSON och REGNR kommer från Inställningar. DATUM skrivs som ÅÅMMDD i PDF/Excel-exporten,
-precis som i det befintliga Excel-arket.
+PERSON väljs med ett tryck mellan de två förarna (Ebba / George – namnen ändras i Inställningar).
+REGNR kommer från Inställningar; har du lagt in flera bilar växlar *Ändra* mellan dem.
+DATUM skrivs som ÅÅMMDD i PDF/Excel-exporten, precis som i det befintliga Excel-arket.
 
 ## Skicka in
 
