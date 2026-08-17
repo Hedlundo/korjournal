@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Körjournal">
+<title>Körjournal</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="55 228 267 242" aria-hidden="true"><g fill="currentColor">
+      <path d="M 80,382 L 186,236 C 192,228 206,228 212,236 L 280,320 L 250,336 L 203,270 C 201,266 197,266 195,271 L 128,372 Z"/>
+      <path d="M 322,300 C 230,318 140,345 78,388 C 150,375 240,348 322,300 Z"/>
+      <path d="M 278,386 C 200,400 130,430 55,470 C 130,452 205,420 278,386 Z"/>
+    </g></svg>
+    <span>Körjournal</span>
+  </div>
+  <button id="btnSettings" class="icon-btn" aria-label="Inställningar">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/><path fill="currentColor" d="m19.4 13-.1-1 2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L14.8 4h-4l-.4 2.6c-.6.2-1.2.6-1.7 1l-2.4-1-2 3.4L6.4 12l-.1 1-2 1.6 2 3.4 2.4-1c.5.4 1 .8 1.7 1l.4 2.6h4l.4-2.6c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6Z" opacity=".28"/></svg>
+  </button>
+</header>
+
+<!-- ===================== LISTA ===================== -->
+<main id="viewTrips" class="view">
+  <div id="summary" class="summary"></div>
+  <div id="tripList" class="trip-list"></div>
+</main>
+
+<div class="actionbar">
+  <button id="btnSend" class="btn btn-ghost">Skicka in</button>
+  <button id="btnNew" class="btn btn-primary">+ Ny resa</button>
+</div>
+
+<!-- ===================== RESA ===================== -->
+<section id="sheetTrip" class="sheet" hidden>
+  <div class="sheet-head">
+    <button class="link-btn" data-close>Avbryt</button>
+    <h2 id="tripTitle">Ny resa</h2>
+    <button class="link-btn strong" id="btnSaveTop">Spara</button>
+  </div>
+
+  <div class="sheet-body">
+
+    <div class="who" id="whoBar"></div>
+
+    <label class="field">
+      <span class="lbl">Datum</span>
+      <div class="date-row">
+        <button type="button" class="step-btn" id="dayPrev" aria-label="Föregående dag">−</button>
+        <input type="date" id="fDatum" class="inp">
+        <button type="button" class="step-btn" id="dayNext" aria-label="Nästa dag">+</button>
+      </div>
+      <div class="chips" id="dateChips">
+        <button type="button" class="chip" data-day="0">Idag</button>
+        <button type="button" class="chip" data-day="-1">Igår</button>
+        <button type="button" class="chip" data-day="-2">I förrgår</button>
+      </div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">Kund</span>
+      <input id="fKund" class="inp" list="dlKund" autocomplete="off" placeholder="t.ex. AIRFIL MALMÖ" enterkeyhint="next">
+      <datalist id="dlKund"></datalist>
+      <div class="chips" id="kundChips"></div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">Syfte</span>
+      <input id="fSyfte" class="inp" list="dlSyfte" autocomplete="off" placeholder="t.ex. SAMARBETSMÖTE">
+      <datalist id="dlSyfte"></datalist>
+      <div class="chips" id="syfteChips"></div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">Från <em>adress start</em></span>
+      <input id="fAdrStart" class="inp" list="dlAdr" autocomplete="off" placeholder="Startadress">
+      <datalist id="dlAdr"></datalist>
+      <div class="chips" id="fromChips"></div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">Till <em>adress stopp</em></span>
+      <input id="fAdrStopp" class="inp" list="dlAdr" autocomplete="off" placeholder="Slutadress">
+      <div class="chips" id="toChips"></div>
+    </label>
+
+    <div class="field">
+      <span class="lbl">Mätarställning</span>
+      <div class="meter-row">
+        <div class="meter">
+          <span class="sub">Start</span>
+          <input id="fMatStart" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+        </div>
+        <div class="meter">
+          <span class="sub">Stopp</span>
+          <input id="fMatStopp" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+        </div>
+      </div>
+      <div class="km-out" id="kmOut"><b>0</b> km</div>
+      <div class="hint" id="kmHint"></div>
+    </div>
+
+    <label class="field">
+      <span class="lbl">Trängselskatt <em>valfritt</em></span>
+      <input id="fTrangsel" class="inp num" inputmode="decimal" placeholder="0 kr">
+    </label>
+
+    <label class="field">
+      <span class="lbl">Verksamhet</span>
+      <input id="fVerksamhet" class="inp" list="dlVerk" autocomplete="off" placeholder="FILTER">
+      <datalist id="dlVerk"></datalist>
+    </label>
+
+    <button id="btnSave" class="btn btn-primary btn-block">Spara resa</button>
+    <button id="btnSaveReturn" class="btn btn-ghost btn-block">Spara + skapa returresa</button>
+    <button id="btnDelete" class="btn btn-danger btn-block" hidden>Ta bort resa</button>
+  </div>
+</section>
+
+<!-- ===================== INSTÄLLNINGAR ===================== -->
+<section id="sheetSettings" class="sheet" hidden>
+  <div class="sheet-head">
+    <button class="link-btn" data-close>Stäng</button>
+    <h2>Inställningar</h2>
+    <button class="link-btn strong" id="btnSaveSettings">Spara</button>
+  </div>
+  <div class="sheet-body">
+    <label class="field">
+      <span class="lbl">Förare</span>
+      <input id="sPerson" class="inp" placeholder="FÖRNAMN EFTERNAMN" autocomplete="name">
+    </label>
+    <label class="field">
+      <span class="lbl">Registreringsnummer</span>
+      <input id="sRegnr" class="inp" placeholder="ABC123">
+      <div class="chips" id="regChips"></div>
+    </label>
+    <label class="field">
+      <span class="lbl">Standardadress <em>utgångspunkt</em></span>
+      <input id="sHome" class="inp" placeholder="LAGAVÄGEN 23 STHLM">
+    </label>
+    <label class="field">
+      <span class="lbl">Standard verksamhet</span>
+      <input id="sVerk" class="inp" placeholder="FILTER">
+    </label>
+    <label class="field">
+      <span class="lbl">Mottagare i affärssystemet</span>
+      <input id="sMail" class="inp" type="email" inputmode="email" autocapitalize="off" placeholder="korjournal@foretaget.se">
+      <div class="hint">Adressen som körjournalen mejlas till.</div>
+    </label>
+
+    <div class="divider"></div>
+    <button id="btnExport" class="btn btn-ghost btn-block">Exportera säkerhetskopia (JSON)</button>
+    <button id="btnImport" class="btn btn-ghost btn-block">Importera säkerhetskopia</button>
+    <input type="file" id="fileImport" accept="application/json,.json" hidden>
+    <div class="hint center" id="verInfo"></div>
+  </div>
+</section>
+
+<!-- ===================== SKICKA IN ===================== -->
+<section id="sheetSend" class="sheet" hidden>
+  <div class="sheet-head">
+    <button class="link-btn" data-close>Avbryt</button>
+    <h2>Skicka in körjournal</h2>
+    <span class="link-btn ghost"></span>
+  </div>
+  <div class="sheet-body">
+    <label class="field">
+      <span class="lbl">Period</span>
+      <select id="sendPeriod" class="inp"></select>
+    </label>
+    <label class="field">
+      <span class="lbl">Förare</span>
+      <select id="sendPerson" class="inp"></select>
+    </label>
+
+    <div class="recap" id="sendRecap"></div>
+
+    <button id="btnMakePdf" class="btn btn-primary btn-block">Skapa PDF och öppna mejl</button>
+    <div class="hint center">PDF:en bifogas i mejlet du väljer i delningsrutan.</div>
+
+    <div class="divider"></div>
+    <div class="mailto-row">
+      <span id="mailToLabel" class="mono"></span>
+      <button id="btnCopyMail" class="btn btn-mini">Kopiera</button>
+    </div>
+    <button id="btnCopyTsv" class="btn btn-ghost btn-block">Kopiera rader för Excel</button>
+    <button id="btnPreviewPdf" class="btn btn-ghost btn-block">Förhandsgranska PDF</button>
+  </div>
+</section>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="pdf.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
