@@ -117,6 +117,16 @@
       <div class="hint" id="kmHint"></div>
     </div>
 
+    <div class="field">
+      <span class="lbl">Tull</span>
+      <button type="button" id="btnTull" class="btn btn-tull">+ Passerade tull</button>
+      <div class="tull-line">
+        <span id="tullInfo">Inga passager</span>
+        <button type="button" id="tullReset">Nollställ</button>
+      </div>
+      <input id="fTull" class="inp num" inputmode="decimal" placeholder="0 kr">
+    </div>
+
     <label class="field">
       <span class="lbl">Trängselskatt <em>valfritt</em></span>
       <input id="fTrangsel" class="inp num" inputmode="decimal" placeholder="0 kr">
@@ -158,9 +168,13 @@
       <span class="lbl">Bilar i appen</span>
       <div class="two">
         <input id="sCar1" class="inp" placeholder="WXE84R" autocomplete="off" autocapitalize="characters">
-        <input id="sCar2" class="inp" placeholder="Bil 2 – regnr" autocomplete="off" autocapitalize="characters">
+        <span class="rate"><input id="sMil1" class="inp num" inputmode="decimal" placeholder="25"><i>kr/mil</i></span>
       </div>
-      <div class="hint">Regnumren du kan välja mellan när du registrerar en resa.</div>
+      <div class="two">
+        <input id="sCar2" class="inp" placeholder="Bil 2 – regnr" autocomplete="off" autocapitalize="characters">
+        <span class="rate"><input id="sMil2" class="inp num" inputmode="decimal" placeholder="0"><i>kr/mil</i></span>
+      </div>
+      <div class="hint">Sätt 0 kr/mil på tjänstebil eller lastbil – då räknas ingen milersättning.</div>
     </div>
     <div class="field">
       <span class="lbl">Standardbil</span>
@@ -173,6 +187,11 @@
     <label class="field">
       <span class="lbl">Standard verksamhet</span>
       <input id="sVerk" class="inp" placeholder="FILTER">
+    </label>
+    <label class="field">
+      <span class="lbl">Tullavgift per passage</span>
+      <span class="rate wide"><input id="sTull" class="inp num" inputmode="decimal" placeholder="0"><i>kr</i></span>
+      <div class="hint">Fylls i automatiskt när du trycker på tull-knappen. Lämna tom om beloppet varierar.</div>
     </label>
     <label class="field">
       <span class="lbl">Mottagare i affärssystemet</span>

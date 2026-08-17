@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.2.0';
+  var VER = '1.3.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -24,15 +24,41 @@
       settings.cars = (settings.regs && settings.regs.length) ? settings.regs.slice(0, 2)
                     : (settings.regnr ? [settings.regnr] : ['WXE84R']);
     }
+    // bilarna är {nr, mil} sedan v1.3 – äldre versioner sparade bara regnumret
+    settings.cars = settings.cars.map(function (c, i) {
+      if (typeof c === 'string') return { nr: c, mil: i === 0 ? 25 : 0 };
+      return { nr: c.nr || '', mil: numOf(c.mil) };
+    }).filter(function (c) { return !!c.nr; });
+    if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25 }];
     delete settings.regs;
-    if (!settings.regnr || settings.cars.indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0];
+    if (!settings.regnr || carNames().indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0].nr;
+    if (settings.tull == null) settings.tull = '';
+  }
+  function carNames() {
+    return (settings.cars || []).map(function (c) { return c.nr; }).filter(Boolean);
+  }
+  /* kr per mil för ett regnr – 0 om bilen inte ger milersättning */
+  function rateFor(nr) {
+    var c = (settings.cars || []).filter(function (x) { return x.nr === nr; })[0];
+    return c ? numOf(c.mil) : 0;
   }
   function drivers() {
     return (settings.drivers || []).filter(function (d) { return !!d; });
   }
   function cars() {
-    var c = (settings.cars || []).filter(function (v) { return !!v; });
+    var c = carNames();
     return c.length ? c : ['WXE84R'];
+  }
+  /* belopp: 4057.5 → "4 057,50 kr" */
+  function kr(v) {
+    var p = (Math.round(numOf(v) * 100) / 100).toFixed(2).split('.');
+    return p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + p[1] + ' kr';
+  }
+  function mil(km) { return (Math.round(km * 10) / 100).toString().replace('.', ','); }
+  /* milersättning för en resa */
+  function ersFor(t) {
+    var r = rateFor(t.regnr);
+    return r ? Math.round(numOf(t.km) / 10 * r * 100) / 100 : 0;
   }
   /* segmenterad väljare: renderar knappar och returnerar vald via onPick */
   function segment(el, items, active, onPick) {
@@ -127,14 +153,17 @@
       list.innerHTML = '<div class="empty"><b>Tom körjournal</b>Tryck på <b style="display:inline">+ Ny resa</b> för att registrera din första resa.</div>';
       return;
     }
-    var thisMonth = monthKey(todayISO()), km = 0, cnt = 0, tr = 0;
+    var thisMonth = monthKey(todayISO()), km = 0, cnt = 0, ers = 0, utlagg = 0;
     trips.forEach(function (t) {
-      if (monthKey(t.datum) === thisMonth) { km += numOf(t.km); cnt++; tr += numOf(t.trangsel); }
+      if (monthKey(t.datum) !== thisMonth) return;
+      km += numOf(t.km); cnt++;
+      ers += ersFor(t);
+      utlagg += numOf(t.trangsel) + numOf(t.tull);
     });
     $('summary').innerHTML =
       '<div class="big">' + km + '<span>km</span></div>' +
-      '<div class="meta">' + MONTHS[+thisMonth.slice(5, 7) - 1] + ' · ' + cnt + ' resor' +
-      (tr ? ' · ' + KJPdf.fmtKr(tr) + ' kr trängselskatt' : '') + '</div>';
+      '<div class="meta">' + MONTHS[+thisMonth.slice(5, 7) - 1] + ' · ' + cnt + ' resor</div>' +
+      (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '');
 
     var html = '', curM = null;
     s.forEach(function (t) {
@@ -190,6 +219,9 @@
     $('fAdrStopp').value = t.adressStopp || '';
     $('fMatStart').value = t.matStart || '';
     $('fMatStopp').value = t.matStopp || '';
+    $('fTull').value = t.tull || '';
+    $('sheetTrip').dataset.tullAntal = t.tullAntal || 0;
+    renderTull();
     $('fTrangsel').value = t.trangsel || '';
     $('fVerksamhet').value = t.verksamhet || settings.verk || '';
 
@@ -231,6 +263,22 @@
     $('carSeg').appendChild(b);
   }
 
+  /* tull: varje tryck är en passage, beloppet räknas upp med standardavgiften */
+  function renderTull() {
+    var n = parseInt($('sheetTrip').dataset.tullAntal, 10) || 0;
+    $('tullInfo').textContent = n ? (n + (n === 1 ? ' passage' : ' passager')) : 'Inga passager';
+    $('tullReset').hidden = !n;
+  }
+  function addTull(step) {
+    var el = $('sheetTrip');
+    var n = Math.max(0, (parseInt(el.dataset.tullAntal, 10) || 0) + step);
+    el.dataset.tullAntal = n;
+    var avg = numOf(settings.tull);
+    if (avg) $('fTull').value = n ? Math.round(n * avg * 100) / 100 : '';
+    renderTull();
+    if (step > 0) toast(avg ? 'Tull tillagd · ' + kr(numOf($('fTull').value)) : 'Passage registrerad – fyll i beloppet');
+  }
+
   function calcKm() {
     var a = intOf($('fMatStart').value), b = intOf($('fMatStopp').value);
     var out = $('kmOut'), hint = $('kmHint');
@@ -252,6 +300,8 @@
       matStart: intOf($('fMatStart').value),
       matStopp: intOf($('fMatStopp').value),
       trangsel: numOf($('fTrangsel').value) || '',
+      tull: numOf($('fTull').value) || '',
+      tullAntal: parseInt($('sheetTrip').dataset.tullAntal, 10) || 0,
       person: $('sheetTrip').dataset.person || '',
       regnr: $('sheetTrip').dataset.regnr || ''
     };
@@ -297,11 +347,15 @@
     $('sDriver1').value = (settings.drivers || [])[0] || '';
     $('sDriver2').value = (settings.drivers || [])[1] || '';
     renderDefaultDriver(settings.person);
-    $('sCar1').value = (settings.cars || [])[0] || '';
-    $('sCar2').value = (settings.cars || [])[1] || '';
+    var c = settings.cars || [];
+    $('sCar1').value = (c[0] && c[0].nr) || '';
+    $('sMil1').value = (c[0] && c[0].mil) || '';
+    $('sCar2').value = (c[1] && c[1].nr) || '';
+    $('sMil2').value = (c[1] && c[1].mil) || '';
     renderDefaultCar(settings.regnr);
     $('sHome').value = settings.home || '';
     $('sVerk').value = settings.verk || '';
+    $('sTull').value = settings.tull || '';
     $('sMail').value = settings.mail || '';
     $('verInfo').textContent = 'Körjournal ' + VER + ' · ' + trips.length + ' resor sparade i den här telefonen';
     open($('sheetSettings'));
@@ -330,12 +384,14 @@
     settings.person = settings.drivers.indexOf(def) >= 0 ? def : settings.drivers[0];
 
     var c1 = up($('sCar1').value).toUpperCase(), c2 = up($('sCar2').value).toUpperCase();
-    settings.cars = [c1, c2].filter(Boolean);
-    if (!settings.cars.length) settings.cars = ['WXE84R'];
+    settings.cars = [{ nr: c1, mil: numOf($('sMil1').value) }, { nr: c2, mil: numOf($('sMil2').value) }]
+      .filter(function (c) { return !!c.nr; });
+    if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25 }];
     var dc = $('sDefaultCar').dataset.value || '';
-    settings.regnr = settings.cars.indexOf(dc) >= 0 ? dc : settings.cars[0];
+    settings.regnr = carNames().indexOf(dc) >= 0 ? dc : settings.cars[0].nr;
     settings.home = up($('sHome').value);
     settings.verk = up($('sVerk').value);
+    settings.tull = numOf($('sTull').value) || '';
     settings.mail = up($('sMail').value);
     settings.setup = true;
     saveSettings();
@@ -380,15 +436,49 @@
     });
   }
 
+  /* sammanställning: milersättning per bil + utlägg */
+  function summaryLines(sel) {
+    var byCar = {}, order = [], tr = 0, tull = 0, tullN = 0, i;
+    for (i = 0; i < sel.length; i++) {
+      var t = sel[i], nr = t.regnr || '—';
+      if (byCar[nr] == null) { byCar[nr] = 0; order.push(nr); }
+      byCar[nr] += numOf(t.km);
+      tr += numOf(t.trangsel);
+      tull += numOf(t.tull);
+      tullN += parseInt(t.tullAntal, 10) || 0;
+    }
+    var lines = [], totErs = 0;
+    order.forEach(function (nr) {
+      var km = byCar[nr], rate = rateFor(nr), belopp = rate ? Math.round(km / 10 * rate * 100) / 100 : 0;
+      totErs += belopp;
+      lines.push({
+        label: nr + ' - ' + km + ' km' + (rate ? ' (' + mil(km) + ' mil x ' + rate + ' kr/mil)' : ''),
+        value: rate ? kr(belopp) : 'ingen milersättning'
+      });
+    });
+    if (tr) lines.push({ label: 'Trängselskatt', value: kr(tr) });
+    if (tull) lines.push({ label: 'Tull' + (tullN ? ' (' + tullN + ' passager)' : ''), value: kr(tull) });
+    lines.push({ rule: true });
+    lines.push({ label: 'Summa att ersätta', value: kr(totErs + tr + tull), bold: true });
+    return lines;
+  }
+
   function updateRecap() {
-    var sel = selection(), km = 0, tr = 0;
-    sel.forEach(function (t) { km += numOf(t.km); tr += numOf(t.trangsel); });
-    $('sendRecap').innerHTML =
+    var sel = selection(), km = 0, i;
+    for (i = 0; i < sel.length; i++) km += numOf(sel[i].km);
+    var lines = summaryLines(sel);
+    var html =
       '<div class="row"><span>Period</span><b>' + esc(periodLabel()) + '</b></div>' +
       '<div class="row"><span>Förare</span><b>' + esc($('sendPerson').value === 'ALLA' ? 'Alla' : $('sendPerson').value) + '</b></div>' +
       '<div class="row"><span>Antal resor</span><b>' + sel.length + '</b></div>' +
-      (tr ? '<div class="row"><span>Trängselskatt</span><b>' + KJPdf.fmtKr(tr) + ' kr</b></div>' : '') +
-      '<div class="row total"><span>Totalt</span><b>' + km + ' km</b></div>';
+      '<div class="row"><span>Körsträcka</span><b>' + km + ' km</b></div>';
+    if (sel.length) {
+      lines.forEach(function (l) {
+        if (l.rule) return;
+        html += '<div class="row' + (l.bold ? ' total' : '') + '"><span>' + esc(l.label) + '</span><b>' + esc(l.value) + '</b></div>';
+      });
+    }
+    $('sendRecap').innerHTML = html;
     $('btnMakePdf').disabled = !sel.length;
   }
   function periodLabel() {
@@ -405,8 +495,9 @@
         km: String(numOf(t.km)),
         adressStart: t.adressStart, adressStopp: t.adressStopp,
         trangsel: t.trangsel ? KJPdf.fmtKr(numOf(t.trangsel)) : '',
+        tull: t.tull ? KJPdf.fmtKr(numOf(t.tull)) : '',
         person: t.person, regnr: t.regnr,
-        _km: numOf(t.km), _trangsel: numOf(t.trangsel)
+        _km: numOf(t.km), _trangsel: numOf(t.trangsel), _tull: numOf(t.tull)
       };
     });
   }
@@ -423,17 +514,23 @@
       subtitle: pers + '  ·  ' + Object.keys(regs).join(', ') + '  ·  ' + periodLabel(),
       foretag: settings.foretag || '',
       skapad: todayISO(),
-      footer: fname
+      footer: fname,
+      summary: summaryLines(sel)
     });
     return { blob: new Blob([bytes], { type: 'application/pdf' }), name: fname, sel: sel, pers: pers };
   }
 
   function mailBody(r) {
     var km = 0; r.sel.forEach(function (t) { km += numOf(t.km); });
+    var sum = '';
+    summaryLines(r.sel).forEach(function (l) {
+      if (!l.rule) sum += l.label + ': ' + l.value + '\n';
+    });
     return 'Hej,\n\nHär kommer körjournal för ' + periodLabel().toLowerCase() + '.\n' +
            'Förare: ' + r.pers + '\n' +
            'Antal resor: ' + r.sel.length + '\n' +
-           'Totalt: ' + km + ' km\n\n' +
+           'Körsträcka: ' + km + ' km\n\n' +
+           sum + '\n' +
            'Körjournalen är bifogad som PDF.\n';
   }
 
@@ -478,11 +575,11 @@
 
   function tsv() {
     var head = ['KUND', 'SYFTE', 'VERKSAMHET', 'DATUM', 'MÄTARSTÄLLNING START', 'MÄTARSTÄLLNING STOPP',
-                'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT', 'PERSON', 'REGNR'];
+                'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT', 'TULL', 'PERSON', 'REGNR'];
     var lines = [head.join('\t')];
     pdfRows(selection()).forEach(function (r) {
       lines.push([r.kund, r.syfte, r.verksamhet, r.datum, r.matStart, r.matStopp, r.km,
-                  r.adressStart, r.adressStopp, r.trangsel, r.person, r.regnr].join('\t'));
+                  r.adressStart, r.adressStopp, r.trangsel, r.tull, r.person, r.regnr].join('\t'));
     });
     return lines.join('\n');
   }
@@ -525,6 +622,13 @@
       saveTrips(); render(); close($('sheetTrip')); toast('Resa borttagen');
     });
 
+    $('btnTull').addEventListener('click', function (e) { e.preventDefault(); addTull(1); });
+    $('tullReset').addEventListener('click', function (e) {
+      e.preventDefault();
+      $('sheetTrip').dataset.tullAntal = 0;
+      if (numOf(settings.tull)) $('fTull').value = '';
+      renderTull();
+    });
     $('fMatStart').addEventListener('input', calcKm);
     $('fMatStopp').addEventListener('input', calcKm);
     $('dayPrev').addEventListener('click', function (e) { e.preventDefault(); $('fDatum').value = shiftISO($('fDatum').value || todayISO(), -1); });

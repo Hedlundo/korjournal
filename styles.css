@@ -51,6 +51,11 @@ button{font:inherit;color:inherit}
 .summary .big{font-size:34px;font-weight:800;line-height:1.05;color:var(--yellow)}
 .summary .big span{font-size:16px;color:#fff;font-weight:600;margin-left:6px}
 .summary .meta{margin-top:4px;color:#c9ccd2;font-size:14px}
+.summary .pay{
+  margin-top:10px;padding-top:10px;border-top:1px solid #ffffff22;
+  font-size:20px;font-weight:800;
+}
+.summary .pay span{font-size:13px;font-weight:600;color:#c9ccd2;margin-left:8px}
 
 .month-head{
   display:flex;justify-content:space-between;align-items:baseline;
@@ -186,8 +191,26 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
   color:var(--ink-3);font-weight:600;border:1px dashed var(--line);background:transparent;
 }
 
-.two{display:flex;gap:10px}
+.two{display:flex;gap:10px;margin-bottom:10px}
+.two:last-of-type{margin-bottom:0}
 .two .inp{flex:1;min-width:0}
+.rate{position:relative;flex:0 0 124px;display:block}
+.rate.wide{flex:none;width:100%;display:block}
+.rate .inp{width:100%;padding-right:56px}
+.rate i{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-style:normal;font-size:13px;color:var(--ink-3);pointer-events:none;
+}
+
+.btn-tull{
+  width:100%;background:var(--card);border:2px solid var(--yellow);color:var(--ink);
+}
+.btn-tull:active{background:var(--yellow)}
+.tull-line{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:8px 0;font-size:14px;color:var(--ink-2);
+}
+.tull-line button{background:none;border:0;color:var(--ink-2);text-decoration:underline;cursor:pointer;font-size:14px;padding:6px 0}
 
 .hint{font-size:13px;color:var(--ink-3);margin-top:6px}
 .hint.center{text-align:center}

@@ -150,6 +150,7 @@
     { k: 'adressStart', t: 'ADRESS START',      w: 104 },
     { k: 'adressStopp', t: 'ADRESS STOPP',      w: 104 },
     { k: 'trangsel',    t: 'TRÄNGSELSKATT',     w: 44, a: 'r' },
+    { k: 'tull',        t: 'TULL',              w: 34, a: 'r' },
     { k: 'person',      t: 'PERSON',            w: 68 },
     { k: 'regnr',       t: 'REGNR',             w: 40 }
   ];
@@ -169,7 +170,7 @@
 
     var pages = [], page = null, y = 0, pageNo = 0;
 
-    function header() {
+    function header(withTable) {
       page = new Page(PW, PH); pages.push(page); pageNo++;
       page.rect(0, PH - 46, PW, 46, DARK);
       page.text('KÖRJOURNAL', M, PH - 30, 15, true, 'l', null, 1);
@@ -177,6 +178,7 @@
       page.text(meta.foretag || '', right, PH - 22, 8, false, 'r', 260, 0.85);
       page.text('Skapad ' + (meta.skapad || ''), right, PH - 34, 8, false, 'r', 260, 0.6);
       y = PH - 46 - 12;
+      if (withTable === false) return;
       // rubrikrad – etiketter bryts på upp till två rader
       var hl = [], maxL = 1, c;
       for (c = 0; c < COLS.length; c++) {
@@ -204,7 +206,7 @@
 
     header();
 
-    var totKm = 0, totTr = 0;
+    var totKm = 0, totTr = 0, totTull = 0;
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r], cells = [], maxLines = 1;
       for (i = 0; i < COLS.length; i++) {
@@ -226,6 +228,7 @@
       y -= rh;
       totKm += Number(row._km) || 0;
       totTr += Number(row._trangsel) || 0;
+      totTull += Number(row._tull) || 0;
     }
 
     /* summarad */
@@ -235,6 +238,26 @@
     page.text(String(totKm), xs[6] + w[6] - PAD, y - 12, 8.5, true, 'r', null, 1);
     page.text('km', xs[7] + PAD, y - 12, 7, false, 'l', null, 0.75);
     page.text(totTr ? fmtKr(totTr) : '', xs[9] + w[9] - PAD, y - 12, 8, true, 'r', null, 1);
+    page.text(totTull ? fmtKr(totTull) : '', xs[10] + w[10] - PAD, y - 12, 8, true, 'r', null, 1);
+    y -= 18;
+
+    /* sammanställning av ersättning */
+    var sum = meta.summary || [];
+    if (sum.length) {
+      var need = 30 + sum.length * 14;
+      if (y - need < M + 26) header(false);
+      y -= 22;
+      page.text('SAMMANSTÄLLNING', M, y, 9, true);
+      y -= 6;
+      var vx = M + 330;
+      for (var s = 0; s < sum.length; s++) {
+        var ln = sum[s];
+        if (ln.rule) { page.line(M, y - 4, vx, y - 4, 0.7, 0.6); y -= 9; continue; }
+        y -= 14;
+        page.text(ln.label, M + 2, y, ln.bold ? 9 : 8.5, !!ln.bold, 'l', 300);
+        page.text(ln.value, vx, y, ln.bold ? 9 : 8.5, !!ln.bold, 'r', 130);
+      }
+    }
 
     for (i = 0; i < pages.length; i++) footer(pages[i], i + 1, pages.length);
 
