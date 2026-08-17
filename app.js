@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.5.0';
+  var VER = '1.6.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -33,6 +33,7 @@
     delete settings.regs;
     if (!settings.regnr || carNames().indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0].nr;
     if (settings.tull == null) settings.tull = '';
+    if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
   }
   function carNames() {
     return (settings.cars || []).map(function (c) { return c.nr; }).filter(Boolean);

@@ -34,7 +34,10 @@ button{font:inherit;color:inherit}
   background:var(--ink);color:#fff;
 }
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em}
-.brand svg{width:30px;height:28px;color:var(--yellow)}
+.brand svg{width:30px;height:28px;color:var(--yellow);flex:0 0 30px}
+.brand-txt{display:flex;flex-direction:column;line-height:1.12;min-width:0}
+.brand-txt i{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--yellow)}
+.brand-txt b{font-size:16px;font-weight:800;letter-spacing:.03em}
 .icon-btn{
   width:44px;height:44px;border:0;border-radius:12px;background:transparent;
   display:grid;place-items:center;cursor:pointer;
