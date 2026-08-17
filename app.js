@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.6.0';
+  var VER = '1.7.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -238,6 +238,9 @@
     $('fAdrStopp').value = t.adressStopp || '';
     $('fMatStart').value = t.matStart || '';
     $('fMatStopp').value = t.matStopp || '';
+    delete $('sheetTrip').dataset.startLat;
+    delete $('sheetTrip').dataset.stopLat;
+    $('calcHint').textContent = '';
     $('startHint').textContent = (!id && prev && t.matStart && t.matStart === prev.matStopp)
       ? 'Ifylld från förra resan, som slutade på ' + prev.matStopp + '.'
       : 'Läs av mätaren innan du kör.';
@@ -325,12 +328,16 @@
   }
 
   /* GPS: hämtar position och översätter till gatuadress */
-  function useMyPosition(btn, input) {
+  function useMyPosition(btn, input, mark) {
     if (!navigator.geolocation) { toast('Telefonen delar inte plats'); return; }
     btn.classList.add('busy');
     var done = function (msg) { btn.classList.remove('busy'); if (msg) toast(msg, 3000); };
     navigator.geolocation.getCurrentPosition(function (pos) {
       var c = pos.coords;
+      if (mark) {                                   // spara punkten för körvägsberäkningen
+        $('sheetTrip').dataset[mark + 'Lat'] = c.latitude;
+        $('sheetTrip').dataset[mark + 'Lon'] = c.longitude;
+      }
       fetch(GEO + 'reverse?format=jsonv2&zoom=18&addressdetails=1&lat=' + c.latitude + '&lon=' + c.longitude)
         .then(function (r) { return r.json(); })
         .then(function (o) {
@@ -343,6 +350,75 @@
     }, function (err) {
       done(err && err.code === 1 ? 'Appen får inte använda din plats' : 'Kunde inte hitta din plats');
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  }
+
+  /* ---------------- körväg från kartan ----------------
+     Uppskattar körsträckan mellan start och stopp och föreslår
+     en mätarställning. Föraren måste stämma av mot mätaren. */
+  var OSRM = 'https://router.project-osrm.org/route/v1/driving/';
+  var geoCache = {};
+
+  /* adresstext → koordinat */
+  function geoPoint(text) {
+    text = up(text);
+    if (!text) return Promise.resolve(null);
+    if (geoCache[text]) return Promise.resolve(geoCache[text]);
+    return fetch(GEO + 'search?format=jsonv2&limit=1&countrycodes=se&q=' + encodeURIComponent(text))
+      .then(function (r) { return r.json(); })
+      .then(function (l) {
+        if (!l || !l.length) return null;
+        geoCache[text] = { lat: +l[0].lat, lon: +l[0].lon };
+        return geoCache[text];
+      })
+      .catch(function () { return null; });
+  }
+
+  /* punkt för ett fält: GPS-koordinaten i första hand, annars adresstexten */
+  function pointFor(mark, input) {
+    var d = $('sheetTrip').dataset;
+    if (d[mark + 'Lat']) return Promise.resolve({ lat: +d[mark + 'Lat'], lon: +d[mark + 'Lon'] });
+    return geoPoint(input.value);
+  }
+
+  function routeKm(a, b) {
+    return fetch(OSRM + a.lon + ',' + a.lat + ';' + b.lon + ',' + b.lat + '?overview=false')
+      .then(function (r) { return r.json(); })
+      .then(function (o) {
+        if (!o || o.code !== 'Ok' || !o.routes || !o.routes.length) return null;
+        return Math.round(o.routes[0].distance / 1000);
+      })
+      .catch(function () { return null; });
+  }
+
+  function suggestFromMap() {
+    var btn = $('btnCalcKm'), hint = $('calcHint');
+    if (!up($('fAdrStart').value) || !up($('fAdrStopp').value)) {
+      hint.textContent = 'Fyll i både start- och slutadress först.';
+      return;
+    }
+    btn.classList.add('busy');
+    hint.textContent = 'Hämtar körvägen…';
+    Promise.all([pointFor('start', $('fAdrStart')), pointFor('stop', $('fAdrStopp'))])
+      .then(function (p) {
+        if (!p[0] || !p[1]) { throw new Error('adress'); }
+        return routeKm(p[0], p[1]);
+      })
+      .then(function (km) {
+        btn.classList.remove('busy');
+        if (!km) { hint.textContent = 'Kartan hittade ingen körväg. Skriv in mätarställningen.'; return; }
+        var start = intOf($('fMatStart').value);
+        if (start) {
+          $('fMatStopp').value = start + km;
+          calcKm();
+          hint.textContent = 'Förslag: ' + km + ' km körväg enligt kartan. Stäm av mot mätaren.';
+        } else {
+          hint.textContent = 'Körväg enligt kartan: ' + km + ' km. Fyll i mätarställning vid start först.';
+        }
+      })
+      .catch(function () {
+        btn.classList.remove('busy');
+        hint.textContent = 'Kunde inte räkna ut sträckan – kontrollera adresserna eller nätet.';
+      });
   }
 
   /* tull: varje tryck är en passage, beloppet räknas upp med standardavgiften */
@@ -765,8 +841,12 @@
 
     geoSuggest($('fAdrStart'), $('dlAdrStart'), addressList);
     geoSuggest($('fAdrStopp'), $('dlAdrStopp'), addressList);
-    $('gpsStart').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStart')); });
-    $('gpsStopp').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStopp')); });
+    $('gpsStart').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStart'), 'start'); });
+    $('gpsStopp').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStopp'), 'stop'); });
+    $('btnCalcKm').addEventListener('click', function (e) { e.preventDefault(); suggestFromMap(); });
+    /* skriver man om adressen gäller inte den sparade GPS-punkten längre */
+    $('fAdrStart').addEventListener('input', function () { delete $('sheetTrip').dataset.startLat; });
+    $('fAdrStopp').addEventListener('input', function () { delete $('sheetTrip').dataset.stopLat; });
 
     $('btnTull').addEventListener('click', function (e) { e.preventDefault(); addTull(1); });
     $('tullReset').addEventListener('click', function (e) {

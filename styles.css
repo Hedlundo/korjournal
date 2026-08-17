@@ -248,6 +248,9 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
 .gps-btn:active{background:var(--yellow);color:#111}
 .gps-btn.busy{background:var(--yellow);color:#111;opacity:.7}
 
+.btn-calc{width:100%;margin-top:10px;min-height:48px;font-size:15px}
+.btn-calc.busy{opacity:.6}
+
 .btn-tull{
   width:100%;background:var(--card);border:2px solid var(--yellow);color:var(--ink);
 }

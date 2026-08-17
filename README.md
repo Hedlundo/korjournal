@@ -20,6 +20,10 @@ Adressfälten slår upp adressen mot OpenStreetMap medan du skriver och blandar 
 dina tidigare adresser. Sikteknappen bredvid fältet hämtar din nuvarande position och fyller i
 gatuadressen – tryck på den vid start och igen när du är framme.
 
+Knappen **Föreslå från kartan** under mätarställning vid stopp räknar ut körvägen mellan
+adresserna (OSRM) och lägger den på startvärdet. Det är ett *förslag* som ska stämmas av mot
+mätaren – kartan känner inte till omvägar, och en körjournal ska bygga på avlästa värden.
+
 Uppslagen kräver nät. Utan täckning fungerar fälten som vanligt med historiken som förslag.
 Appen kan inte känna av framkomst av sig själv i bakgrunden – iOS och Android stänger av
 webbappar som inte är öppna. För automatisk resegistrering krävs en riktig native-app.
