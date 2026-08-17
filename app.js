@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.1.0';
+  var VER = '1.2.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -17,12 +17,22 @@
     try { trips = JSON.parse(localStorage.getItem(K_TRIPS)) || []; } catch (e) { trips = []; }
     try { settings = JSON.parse(localStorage.getItem(K_SET)) || {}; } catch (e) { settings = {}; }
     if (!settings.verk) settings.verk = 'FILTER';
-    if (!settings.regs) settings.regs = [];
     if (!settings.drivers || !settings.drivers.length) settings.drivers = ['EBBA', 'GEORGE'];
     if (!settings.person) settings.person = settings.drivers[0];
+    if (!settings.cars || !settings.cars.length) {
+      // migrera från tidigare version som bara hade ett regnr
+      settings.cars = (settings.regs && settings.regs.length) ? settings.regs.slice(0, 2)
+                    : (settings.regnr ? [settings.regnr] : ['WXE84R']);
+    }
+    delete settings.regs;
+    if (!settings.regnr || settings.cars.indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0];
   }
   function drivers() {
     return (settings.drivers || []).filter(function (d) { return !!d; });
+  }
+  function cars() {
+    var c = (settings.cars || []).filter(function (v) { return !!v; });
+    return c.length ? c : ['WXE84R'];
   }
   /* segmenterad väljare: renderar knappar och returnerar vald via onPick */
   function segment(el, items, active, onPick) {
@@ -186,22 +196,15 @@
     var list = drivers();
     var person = t.person || settings.person || list[0] || '';
     if (list.indexOf(person) === -1 && person) list = list.concat([person]);
-    var regnr = t.regnr || settings.regnr || '';
+    var carList = cars();
+    var regnr = t.regnr || settings.regnr || carList[0];
+    if (carList.indexOf(regnr) === -1 && regnr) carList = carList.concat([regnr]);
     $('sheetTrip').dataset.person = person;
     $('sheetTrip').dataset.regnr = regnr;
 
     segment($('whoSeg'), list, person, function (v) { $('sheetTrip').dataset.person = v; });
-    $('whoReg').textContent = 'Bil: ' + (regnr || 'inget regnr valt');
-    $('whoEdit').onclick = function (e) {
-      e.preventDefault();
-      var regs = settings.regs || [];
-      if (regs.length > 1) {                       // fler bilar → växla direkt
-        var i = regs.indexOf($('sheetTrip').dataset.regnr);
-        var next = regs[(i + 1) % regs.length];
-        $('sheetTrip').dataset.regnr = next;
-        $('whoReg').textContent = 'Bil: ' + next;
-      } else openSettings();
-    };
+    segment($('carSeg'), carList, regnr, function (v) { $('sheetTrip').dataset.regnr = v; });
+    if (carList.length < 2) addCarButton();
 
     fillDatalist($('dlKund'), freqList('kund'));
     fillDatalist($('dlSyfte'), freqList('syfte'));
@@ -217,6 +220,15 @@
     calcKm();
     open($('sheetTrip'));
     $('sheetTrip').querySelector('.sheet-body').scrollTop = 0;
+  }
+
+  /* plats för bil nr 2 tills regnumret är känt */
+  function addCarButton() {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'ghost-seg';
+    b.textContent = '+ Lägg till bil';
+    b.addEventListener('click', function (e) { e.preventDefault(); openSettings(); });
+    $('carSeg').appendChild(b);
   }
 
   function calcKm() {
@@ -285,11 +297,12 @@
     $('sDriver1').value = (settings.drivers || [])[0] || '';
     $('sDriver2').value = (settings.drivers || [])[1] || '';
     renderDefaultDriver(settings.person);
-    $('sRegnr').value = settings.regnr || '';
+    $('sCar1').value = (settings.cars || [])[0] || '';
+    $('sCar2').value = (settings.cars || [])[1] || '';
+    renderDefaultCar(settings.regnr);
     $('sHome').value = settings.home || '';
     $('sVerk').value = settings.verk || '';
     $('sMail').value = settings.mail || '';
-    chipRow($('regChips'), (settings.regs || []).slice(0, 5), function (v) { $('sRegnr').value = v; });
     $('verInfo').textContent = 'Körjournal ' + VER + ' · ' + trips.length + ' resor sparade i den här telefonen';
     open($('sheetSettings'));
   }
@@ -301,19 +314,30 @@
     $('sDefaultDriver').dataset.value = active;
     segment($('sDefaultDriver'), list, active, function (v) { $('sDefaultDriver').dataset.value = v; });
   }
+  function renderDefaultCar(active) {
+    var c1 = up($('sCar1').value).toUpperCase(), c2 = up($('sCar2').value).toUpperCase();
+    var list = [c1, c2].filter(Boolean);
+    if (!list.length) list = ['WXE84R'];
+    if (list.indexOf(active) === -1) active = list[0];
+    $('sDefaultCar').dataset.value = active;
+    segment($('sDefaultCar'), list, active, function (v) { $('sDefaultCar').dataset.value = v; });
+  }
 
   function storeSettings() {
     var d1 = up($('sDriver1').value).toUpperCase(), d2 = up($('sDriver2').value).toUpperCase();
     settings.drivers = [d1 || 'EBBA', d2 || 'GEORGE'].filter(Boolean);
     var def = $('sDefaultDriver').dataset.value || '';
     settings.person = settings.drivers.indexOf(def) >= 0 ? def : settings.drivers[0];
-    settings.regnr = up($('sRegnr').value).toUpperCase();
+
+    var c1 = up($('sCar1').value).toUpperCase(), c2 = up($('sCar2').value).toUpperCase();
+    settings.cars = [c1, c2].filter(Boolean);
+    if (!settings.cars.length) settings.cars = ['WXE84R'];
+    var dc = $('sDefaultCar').dataset.value || '';
+    settings.regnr = settings.cars.indexOf(dc) >= 0 ? dc : settings.cars[0];
     settings.home = up($('sHome').value);
     settings.verk = up($('sVerk').value);
     settings.mail = up($('sMail').value);
-    if (settings.regnr && (settings.regs || []).indexOf(settings.regnr) === -1) {
-      settings.regs = [settings.regnr].concat(settings.regs || []).slice(0, 5);
-    }
+    settings.setup = true;
     saveSettings();
     close($('sheetSettings'));
     toast('Inställningar sparade');
@@ -481,7 +505,7 @@
     load(); render();
 
     $('btnNew').addEventListener('click', function () {
-      if (!settings.regnr) { toast('Fyll i regnr först'); openSettings(); return; }
+      if (!settings.setup) { toast('Kontrollera inställningarna först'); openSettings(); return; }
       openTrip(null);
     });
     $('btnSend').addEventListener('click', openSend);
@@ -515,6 +539,8 @@
     $('btnSaveSettings').addEventListener('click', storeSettings);
     $('sDriver1').addEventListener('input', function () { renderDefaultDriver($('sDefaultDriver').dataset.value); });
     $('sDriver2').addEventListener('input', function () { renderDefaultDriver($('sDefaultDriver').dataset.value); });
+    $('sCar1').addEventListener('input', function () { renderDefaultCar($('sDefaultCar').dataset.value); });
+    $('sCar2').addEventListener('input', function () { renderDefaultCar($('sDefaultCar').dataset.value); });
     $('sendPeriod').addEventListener('change', updateRecap);
     $('sendPerson').addEventListener('change', updateRecap);
     $('btnMakePdf').addEventListener('click', sendPdf);
@@ -553,7 +579,7 @@
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     }
-    if (!settings.regnr) setTimeout(openSettings, 400);
+    if (!settings.setup) setTimeout(openSettings, 400);
   }
 
   document.addEventListener('DOMContentLoaded', init);

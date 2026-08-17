@@ -53,7 +53,11 @@
     <div class="field">
       <span class="lbl">Förare</span>
       <div class="seg" id="whoSeg"></div>
-      <div class="carline"><span id="whoReg"></span><button type="button" id="whoEdit">Ändra</button></div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Bil <em>regnr</em></span>
+      <div class="seg" id="carSeg"></div>
     </div>
 
     <label class="field">
@@ -150,11 +154,18 @@
       <span class="lbl">Standardförare</span>
       <div class="seg" id="sDefaultDriver"></div>
     </div>
-    <label class="field">
-      <span class="lbl">Registreringsnummer</span>
-      <input id="sRegnr" class="inp" placeholder="ABC123">
-      <div class="chips" id="regChips"></div>
-    </label>
+    <div class="field">
+      <span class="lbl">Bilar i appen</span>
+      <div class="two">
+        <input id="sCar1" class="inp" placeholder="WXE84R" autocomplete="off" autocapitalize="characters">
+        <input id="sCar2" class="inp" placeholder="Bil 2 – regnr" autocomplete="off" autocapitalize="characters">
+      </div>
+      <div class="hint">Regnumren du kan välja mellan när du registrerar en resa.</div>
+    </div>
+    <div class="field">
+      <span class="lbl">Standardbil</span>
+      <div class="seg" id="sDefaultCar"></div>
+    </div>
     <label class="field">
       <span class="lbl">Standardadress <em>utgångspunkt</em></span>
       <input id="sHome" class="inp" placeholder="LAGAVÄGEN 23 STHLM">
