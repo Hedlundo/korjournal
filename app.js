@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.3.0';
+  var VER = '1.4.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -240,7 +240,8 @@
 
     fillDatalist($('dlKund'), freqList('kund'));
     fillDatalist($('dlSyfte'), freqList('syfte'));
-    fillDatalist($('dlAdr'), addressList());
+    fillDatalist($('dlAdrStart'), addressList());
+    fillDatalist($('dlAdrStopp'), addressList());
     fillDatalist($('dlVerk'), freqList('verksamhet').concat(settings.verk ? [settings.verk] : []));
 
     chipRow($('kundChips'), freqList('kund', 4), function (v) { $('fKund').value = v; });
@@ -261,6 +262,65 @@
     b.textContent = '+ Lägg till bil';
     b.addEventListener('click', function (e) { e.preventDefault(); openSettings(); });
     $('carSeg').appendChild(b);
+  }
+
+  /* ---------------- karta: adressförslag och GPS ----------------
+     Använder OpenStreetMap/Nominatim. Kräver nät – utan täckning
+     funkar fälten precis som förut, med historiken som förslag. */
+  var GEO = 'https://nominatim.openstreetmap.org/';
+
+  function geoLabel(a) {
+    if (!a) return '';
+    var gata = [a.road, a.house_number].filter(Boolean).join(' ');
+    var ort = a.city || a.town || a.village || a.hamlet || a.municipality || '';
+    var namn = a.amenity || a.shop || a.office || a.building || '';
+    var del = [gata || namn, ort].filter(Boolean);
+    return del.join(', ') || ort;
+  }
+
+  /* skriv-förslag: slår upp adressen medan man skriver */
+  function geoSuggest(input, dl, historyFn) {
+    var timer = null, last = '';
+    input.addEventListener('input', function () {
+      var q = up(input.value);
+      if (q.length < 4 || q === last) return;
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        last = q;
+        fetch(GEO + 'search?format=jsonv2&addressdetails=1&limit=6&countrycodes=se&q=' + encodeURIComponent(q))
+          .then(function (r) { return r.json(); })
+          .then(function (list) {
+            if (up(input.value) !== q) return;          // användaren skrev vidare
+            var hits = (list || []).map(function (o) { return geoLabel(o.address); }).filter(Boolean);
+            var seen = {}, all = historyFn().concat(hits).filter(function (v) {
+              if (seen[v]) return false; seen[v] = 1; return true;
+            });
+            fillDatalist(dl, all);
+          })
+          .catch(function () { /* offline – historiken räcker */ });
+      }, 700);
+    });
+  }
+
+  /* GPS: hämtar position och översätter till gatuadress */
+  function useMyPosition(btn, input) {
+    if (!navigator.geolocation) { toast('Telefonen delar inte plats'); return; }
+    btn.classList.add('busy');
+    var done = function (msg) { btn.classList.remove('busy'); if (msg) toast(msg, 3000); };
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var c = pos.coords;
+      fetch(GEO + 'reverse?format=jsonv2&zoom=18&addressdetails=1&lat=' + c.latitude + '&lon=' + c.longitude)
+        .then(function (r) { return r.json(); })
+        .then(function (o) {
+          var adr = geoLabel(o && o.address);
+          if (!adr) { done('Hittade ingen adress här'); return; }
+          input.value = adr;
+          done('Plats hämtad · ca ' + Math.round(c.accuracy) + ' m noggrannhet');
+        })
+        .catch(function () { done('Ingen nätverkskontakt – skriv adressen'); });
+    }, function (err) {
+      done(err && err.code === 1 ? 'Appen får inte använda din plats' : 'Kunde inte hitta din plats');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
   }
 
   /* tull: varje tryck är en passage, beloppet räknas upp med standardavgiften */
@@ -621,6 +681,11 @@
       trips = trips.filter(function (t) { return t.id !== editId; });
       saveTrips(); render(); close($('sheetTrip')); toast('Resa borttagen');
     });
+
+    geoSuggest($('fAdrStart'), $('dlAdrStart'), addressList);
+    geoSuggest($('fAdrStopp'), $('dlAdrStopp'), addressList);
+    $('gpsStart').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStart')); });
+    $('gpsStopp').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStopp')); });
 
     $('btnTull').addEventListener('click', function (e) { e.preventDefault(); addTull(1); });
     $('tullReset').addEventListener('click', function (e) {

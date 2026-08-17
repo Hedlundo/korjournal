@@ -14,6 +14,25 @@ till som fylls i när regnumret är känt). Namn och regnummer ändras i Instäl
 bestämmer vilken förare och bil som är förvald.
 DATUM skrivs som ÅÅMMDD i PDF/Excel-exporten, precis som i det befintliga Excel-arket.
 
+## Adresser från kartan
+
+Adressfälten slår upp adressen mot OpenStreetMap medan du skriver och blandar träffarna med
+dina tidigare adresser. Sikteknappen bredvid fältet hämtar din nuvarande position och fyller i
+gatuadressen – tryck på den vid start och igen när du är framme.
+
+Uppslagen kräver nät. Utan täckning fungerar fälten som vanligt med historiken som förslag.
+Appen kan inte känna av framkomst av sig själv i bakgrunden – iOS och Android stänger av
+webbappar som inte är öppna. För automatisk resegistrering krävs en riktig native-app.
+
+## Ersättning
+
+Varje bil har ett belopp per mil i Inställningar (WXE84R = 25 kr/mil). Sätt 0 kr/mil på
+tjänstebil eller lastbil, så räknas ingen milersättning för den. Tull registreras med en knapp
+per passage och beloppet fylls i från standardavgiften i Inställningar.
+
+Sammanställningen – milersättning per bil, trängselskatt, tull och summa att ersätta – visas i
+appen, i PDF:en och i mejltexten.
+
 ## Skicka in
 
 **Skicka in → Skapa PDF och öppna mejl** bygger en A4-PDF (liggande) för vald period och förare

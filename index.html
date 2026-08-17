@@ -90,14 +90,25 @@
 
     <label class="field">
       <span class="lbl">Från <em>adress start</em></span>
-      <input id="fAdrStart" class="inp" list="dlAdr" autocomplete="off" placeholder="Startadress">
-      <datalist id="dlAdr"></datalist>
+      <div class="with-gps">
+        <input id="fAdrStart" class="inp" list="dlAdrStart" autocomplete="off" placeholder="Startadress">
+        <button type="button" class="gps-btn" id="gpsStart" title="Hämta min plats">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/><path fill="currentColor" d="M13 2h-2v2.06A8 8 0 0 0 4.06 11H2v2h2.06A8 8 0 0 0 11 19.94V22h2v-2.06A8 8 0 0 0 19.94 13H22v-2h-2.06A8 8 0 0 0 13 4.06V2Zm-1 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z"/></svg>
+        </button>
+      </div>
+      <datalist id="dlAdrStart"></datalist>
       <div class="chips" id="fromChips"></div>
     </label>
 
     <label class="field">
       <span class="lbl">Till <em>adress stopp</em></span>
-      <input id="fAdrStopp" class="inp" list="dlAdr" autocomplete="off" placeholder="Slutadress">
+      <div class="with-gps">
+        <input id="fAdrStopp" class="inp" list="dlAdrStopp" autocomplete="off" placeholder="Slutadress">
+        <button type="button" class="gps-btn" id="gpsStopp" title="Jag är framme – hämta min plats">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/><path fill="currentColor" d="M13 2h-2v2.06A8 8 0 0 0 4.06 11H2v2h2.06A8 8 0 0 0 11 19.94V22h2v-2.06A8 8 0 0 0 19.94 13H22v-2h-2.06A8 8 0 0 0 13 4.06V2Zm-1 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z"/></svg>
+        </button>
+      </div>
+      <datalist id="dlAdrStopp"></datalist>
       <div class="chips" id="toChips"></div>
     </label>
 

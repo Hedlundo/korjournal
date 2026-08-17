@@ -202,6 +202,17 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
   font-style:normal;font-size:13px;color:var(--ink-3);pointer-events:none;
 }
 
+.with-gps{display:flex;gap:8px}
+.with-gps .inp{flex:1;min-width:0}
+.gps-btn{
+  flex:0 0 var(--tap);width:var(--tap);min-height:var(--tap);
+  border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  display:grid;place-items:center;cursor:pointer;color:var(--ink-2);
+}
+.gps-btn svg{width:24px;height:24px}
+.gps-btn:active{background:var(--yellow);color:#111}
+.gps-btn.busy{background:var(--yellow);color:#111;opacity:.7}
+
 .btn-tull{
   width:100%;background:var(--card);border:2px solid var(--yellow);color:var(--ink);
 }
