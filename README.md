@@ -5,8 +5,17 @@ Ingen server, ingen inloggning – all data ligger i telefonen (localStorage).
 
 ## Fält per resa
 
-KUND · SYFTE · VERKSAMHET · DATUM · MÄTARSTÄLLNING START · MÄTARSTÄLLNING STOPP · KM
-· ADRESS START · ADRESS STOPP · TRÄNGSELSKATT · PERSON · REGNR
+KUND · SYFTE · ORDERNR · VERKSAMHET · DATUM · TID · MÄTARSTÄLLNING START ·
+MÄTARSTÄLLNING STOPP · KM · ADRESS START · ADRESS STOPP · TRÄNGSELSKATT · PERSON · REGNR
+
+Klockslaget vid start fylls i automatiskt när du öppnar en ny resa, och tiden framme sätts när
+du sparar den avslutad. Båda går att ändra.
+
+## Påbörja nu, avsluta senare
+
+En resa kan sparas med bara startadress och startmätarställning. Den hamnar överst i listan med
+gul ram och knappen *Avsluta* – öppna den när du är framme och fyll i resten. Påbörjade resor
+följer aldrig med i ett utskick.
 
 KM räknas ut automatiskt. Mätarställning start och adress start förifylls från förra resan.
 PERSON och REGNR väljs med ett tryck: två förare (Ebba / George) och två bilar (WXE84R plus en
@@ -20,7 +29,7 @@ Adressfälten slår upp adressen mot OpenStreetMap medan du skriver och blandar 
 dina tidigare adresser. Sikteknappen bredvid fältet hämtar din nuvarande position och fyller i
 gatuadressen – tryck på den vid start och igen när du är framme.
 
-Knappen **Föreslå från kartan** under mätarställning vid stopp räknar ut körvägen mellan
+Knappen **Hämta mätarställning från kartposition** under stoppfältet räknar ut körvägen mellan
 adresserna (OSRM) och lägger den på startvärdet. Det är ett *förslag* som ska stämmas av mot
 mätaren – kartan känner inte till omvägar, och en körjournal ska bygga på avlästa värden.
 
@@ -31,13 +40,12 @@ webbappar som inte är öppna. För automatisk resegistrering krävs en riktig n
 ## Ersättning
 
 Varje bil har ett belopp per mil i Inställningar (WXE84R = 25 kr/mil). Sätt 0 kr/mil på
-företagsbilen, så räknas ingen milersättning för den – körningen redovisas ändå. Tull
-registreras med en knapp per passage och beloppet fylls i från standardavgiften i Inställningar.
+företagsbilen, så räknas ingen milersättning för den – körningen redovisas ändå.
 
 Sammanställningen är uppdelad i tre delar och visas i appen, i PDF:en och i mejltexten:
 
 * **Milersättning** per bil
-* **Utlägg** – trängselskatt och tull var för sig, med delsumma
+* **Utlägg** – trängselskatt
 * **Att ersätta** – milersättning + utlägg
 
 Därunder ligger **beräknad bränslekostnad** för bokföringen: varje bil har en förbrukning i
@@ -104,6 +112,15 @@ Varje resa får ett datum i `sentAt` när den följt med i ett utskick. Det syns
 
 I *Skicka in* ligger **Ej inskickade** överst i periodlistan och är förvald, så nästa utskick tar
 med precis det som saknas – inga dubletter, inget som glöms.
+
+## Statistik
+
+Diagramknappen uppe till höger grupperar avslutade resor per **dag, vecka, månad, kund,
+ordernummer eller rutt**, med filter per bil. Varje rad visar antal resor, körsträcka,
+dieselåtgång och bränslekostnad. *Kopiera tabellen för Excel* lägger den på urklipp.
+
+Ordernumret är fältet som kopplar en resa till en order, så fraktkostnaden per order går att
+följa upp.
 
 ## Ny version
 

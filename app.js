@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.8.0';
+  var VER = '2.0.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -32,7 +32,6 @@
     if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25, forb: '' }];
     delete settings.regs;
     if (!settings.regnr || carNames().indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0].nr;
-    if (settings.tull == null) settings.tull = '';
     if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
   }
   function carNames() {
@@ -115,6 +114,9 @@
   function numOf(v) { var x = parseFloat(String(v == null ? '' : v).replace(',', '.').replace(/\s/g, '')); return isFinite(x) ? x : 0; }
   function intOf(v) { var x = parseInt(String(v == null ? '' : v).replace(/\D/g, ''), 10); return isFinite(x) ? x : 0; }
   function up(s) { return String(s || '').trim(); }
+  function nowHM() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  /* en resa utan stoppvärde är påbörjad men inte avslutad */
+  function isOpen(t) { return !t.matStopp; }
 
   function toast(msg, ms) {
     var t = $('toast');
@@ -188,7 +190,7 @@
       if (monthKey(t.datum) !== thisMonth) return;
       km += numOf(t.km); cnt++;
       ers += ersFor(t);
-      utlagg += numOf(t.trangsel) + numOf(t.tull);
+      utlagg += numOf(t.trangsel);
     });
     $('summary').innerHTML =
       '<div class="big">' + km + '<span>km</span></div>' +
@@ -209,12 +211,13 @@
                 '<span class="tot">' + mkm + ' km' +
                 (mej ? ' · <em>' + mej + ' ej inskickade</em>' : ' · allt inskickat') + '</span></div>';
       }
-      var d = t.datum.split('-');
-      html += '<button class="trip" data-id="' + t.id + '">' +
+      var d = t.datum.split('-'), oppen = isOpen(t);
+      html += '<button class="trip' + (oppen ? ' open' : '') + '" data-id="' + t.id + '">' +
         '<span class="d"><b>' + d[2] + '</b><i>' + weekday(t.datum) + '</i></span>' +
-        '<span class="mid"><b>' + esc(t.kund || '—') + '</b>' +
-        '<span>' + esc(t.adressStart || '') + ' → ' + esc(t.adressStopp || '') + '</span></span>' +
-        '<span class="km">' + numOf(t.km) + ' <i>km</i>' +
+        '<span class="mid"><b>' + esc(t.kund || (oppen ? 'Påbörjad resa' : '—')) + '</b>' +
+        '<span>' + (t.tidStart ? t.tidStart + ' · ' : '') + esc(t.adressStart || '') +
+        (oppen ? ' → …' : ' → ' + esc(t.adressStopp || '')) + '</span></span>' +
+        '<span class="km">' + (oppen ? '<i class="go">Avsluta</i>' : numOf(t.km) + ' <i>km</i>') +
         (t.sentAt ? '<i class="flag" title="Inskickad ' + t.sentAt + '">✓ inskickad</i>' : '') +
         '</span></button>';
     });
@@ -274,9 +277,9 @@
     $('startHint').textContent = (!id && prev && t.matStart && t.matStart === prev.matStopp)
       ? 'Ifylld från förra resan, som slutade på ' + prev.matStopp + '.'
       : 'Läs av mätaren innan du kör.';
-    $('fTull').value = t.tull || '';
-    $('sheetTrip').dataset.tullAntal = t.tullAntal || 0;
-    renderTull();
+    $('fTidStart').value = t.tidStart || (id ? '' : nowHM());
+    $('fTidStopp').value = t.tidStopp || '';
+    $('fOrdernr').value = t.ordernr || '';
     $('fTrangsel').value = t.trangsel || '';
     $('fVerksamhet').value = t.verksamhet || settings.verk || '';
 
@@ -301,6 +304,8 @@
 
     chipRow($('kundChips'), freqList('kund', 4), function (v) { $('fKund').value = v; });
     chipRow($('syfteChips'), freqList('syfte', 4), function (v) { $('fSyfte').value = v; });
+    fillDatalist($('dlOrder'), freqList('ordernr'));
+    chipRow($('orderChips'), freqList('ordernr', 4), function (v) { $('fOrdernr').value = v; });
     var adr = addressList(4);
     chipRow($('fromChips'), adr, function (v) { $('fAdrStart').value = v; });
     chipRow($('toChips'), adr, function (v) { $('fAdrStopp').value = v; calcKm(); });
@@ -451,22 +456,6 @@
       });
   }
 
-  /* tull: varje tryck är en passage, beloppet räknas upp med standardavgiften */
-  function renderTull() {
-    var n = parseInt($('sheetTrip').dataset.tullAntal, 10) || 0;
-    $('tullInfo').textContent = n ? (n + (n === 1 ? ' passage' : ' passager')) : 'Inga passager';
-    $('tullReset').hidden = !n;
-  }
-  function addTull(step) {
-    var el = $('sheetTrip');
-    var n = Math.max(0, (parseInt(el.dataset.tullAntal, 10) || 0) + step);
-    el.dataset.tullAntal = n;
-    var avg = numOf(settings.tull);
-    if (avg) $('fTull').value = n ? Math.round(n * avg * 100) / 100 : '';
-    renderTull();
-    if (step > 0) toast(avg ? 'Tull tillagd · ' + kr(numOf($('fTull').value)) : 'Passage registrerad – fyll i beloppet');
-  }
-
   function calcKm() {
     var a = intOf($('fMatStart').value), b = intOf($('fMatStopp').value);
     var out = $('kmOut'), hint = $('kmHint');
@@ -497,8 +486,9 @@
       matStart: intOf($('fMatStart').value),
       matStopp: intOf($('fMatStopp').value),
       trangsel: numOf($('fTrangsel').value) || '',
-      tull: numOf($('fTull').value) || '',
-      tullAntal: parseInt($('sheetTrip').dataset.tullAntal, 10) || 0,
+      tidStart: $('fTidStart').value || '',
+      tidStopp: $('fTidStopp').value || '',
+      ordernr: up($('fOrdernr').value),
       person: $('sheetTrip').dataset.person || '',
       regnr: $('sheetTrip').dataset.regnr || ''
     };
@@ -506,11 +496,19 @@
 
   function saveTrip(thenReturn) {
     var f = readForm();
-    if (!f.kund) { toast('Fyll i kund'); $('fKund').focus(); return; }
-    if (!f.matStart || !f.matStopp) { toast('Fyll i mätarställning'); $('fMatStopp').focus(); return; }
-    if (f.matStopp < f.matStart) { toast('Stopp måste vara högre än start'); $('fMatStopp').focus(); return; }
-    if (!f.adressStopp) { toast('Fyll i adress stopp'); $('fAdrStopp').focus(); return; }
-    f.km = f.matStopp - f.matStart;
+    if (!f.matStart) { toast('Fyll i mätarställning vid start'); $('fMatStart').focus(); return; }
+    if (!f.adressStart) { toast('Fyll i var du startar'); $('fAdrStart').focus(); return; }
+
+    var pagaende = !f.matStopp;
+    if (pagaende) {
+      f.km = '';
+    } else {
+      if (f.matStopp < f.matStart) { toast('Stopp måste vara högre än start'); $('fMatStopp').focus(); return; }
+      if (!f.kund) { toast('Fyll i kund'); $('fKund').focus(); return; }
+      if (!f.adressStopp) { toast('Fyll i var du är framme'); $('fAdrStopp').focus(); return; }
+      if (!f.tidStopp) f.tidStopp = nowHM();
+      f.km = f.matStopp - f.matStart;
+    }
 
     if (editId) {
       for (var i = 0; i < trips.length; i++) if (trips[i].id === editId) {
@@ -535,7 +533,8 @@
       });
     } else {
       close($('sheetTrip'));
-      toast('Resa sparad · ' + f.km + ' km');
+      toast(pagaende ? 'Resan är påbörjad – avsluta den när du är framme' : 'Resa sparad · ' + f.km + ' km',
+            pagaende ? 3500 : 2200);
     }
   }
 
@@ -555,7 +554,6 @@
     renderDefaultCar(settings.regnr);
     $('sHome').value = settings.home || '';
     $('sVerk').value = settings.verk || '';
-    $('sTull').value = settings.tull || '';
     $('sMail').value = settings.mail || '';
     var bi = $('backupInfo'), sedan = settings.backupAt
       ? trips.filter(function (t) { return (t.createdAt || '').slice(0, 10) > settings.backupAt; }).length : trips.length;
@@ -601,7 +599,6 @@
     settings.regnr = carNames().indexOf(dc) >= 0 ? dc : settings.cars[0].nr;
     settings.home = up($('sHome').value);
     settings.verk = up($('sVerk').value);
-    settings.tull = numOf($('sTull').value) || '';
     settings.mail = up($('sMail').value);
     settings.setup = true;
     saveSettings();
@@ -644,6 +641,7 @@
   function selection() {
     var per = $('sendPeriod').value, pers = $('sendPerson').value;
     return trips.filter(function (t) {
+      if (isOpen(t)) return false;
       if (per === 'EJ') { if (t.sentAt) return false; }
       else if (per !== 'ALLA' && monthKey(t.datum) !== per) return false;
       if (pers !== 'ALLA' && t.person !== pers) return false;
@@ -656,17 +654,15 @@
 
   /* sammanställning i tre delar: milersättning, utlägg och bränsle för bokföringen */
   function summaryLines(sel) {
-    var byCar = {}, order = [], tr = 0, tull = 0, tullN = 0, i;
+    var byCar = {}, order = [], tr = 0, i;
     for (i = 0; i < sel.length; i++) {
       var t = sel[i], nr = t.regnr || '—';
       if (byCar[nr] == null) { byCar[nr] = 0; order.push(nr); }
       byCar[nr] += numOf(t.km);
       tr += numOf(t.trangsel);
-      tull += numOf(t.tull);
-      tullN += parseInt(t.tullAntal, 10) || 0;
     }
 
-    var lines = [], totErs = 0, utlagg = tr + tull;
+    var lines = [], totErs = 0, utlagg = tr;
 
     /* milersättning – bara bilar med kr/mil */
     var medErs = order.filter(function (nr) { return rateFor(nr) > 0; });
@@ -686,9 +682,7 @@
     /* utlägg – redovisas var för sig men ingår i summan */
     if (utlagg) {
       lines.push({ head: 'Utlägg' });
-      if (tr) lines.push({ label: 'Trängselskatt', value: kr(tr) });
-      if (tull) lines.push({ label: 'Tull' + (tullN ? ' (' + tullN + (tullN === 1 ? ' passage)' : ' passager)') : ''), value: kr(tull) });
-      if (tr && tull) lines.push({ label: 'Summa utlägg', value: kr(utlagg), sub: true });
+      lines.push({ label: 'Trängselskatt', value: kr(tr) });
     }
 
     lines.push({ rule: true });
@@ -747,11 +741,12 @@
         matStart: String(t.matStart || ''), matStopp: String(t.matStopp || ''),
         km: String(numOf(t.km)),
         adressStart: t.adressStart, adressStopp: t.adressStopp,
+        tid: (t.tidStart || '') + (t.tidStopp ? '-' + t.tidStopp : ''),
+        ordernr: t.ordernr || '',
         trangsel: t.trangsel ? KJPdf.fmtKr(numOf(t.trangsel)) : '',
-        tull: t.tull ? KJPdf.fmtKr(numOf(t.tull)) : '',
         bransle: fuelFor(t) ? KJPdf.fmtKr(Math.round(fuelFor(t))) : '',
         person: t.person, regnr: t.regnr,
-        _km: numOf(t.km), _trangsel: numOf(t.trangsel), _tull: numOf(t.tull), _bransle: fuelFor(t)
+        _km: numOf(t.km), _trangsel: numOf(t.trangsel), _bransle: fuelFor(t)
       };
     });
   }
@@ -832,12 +827,13 @@
   }
 
   function tsv() {
-    var head = ['KUND', 'SYFTE', 'VERKSAMHET', 'DATUM', 'MÄTARSTÄLLNING START', 'MÄTARSTÄLLNING STOPP',
-                'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT', 'TULL', 'BRÄNSLE CA', 'PERSON', 'REGNR'];
+    var head = ['KUND', 'SYFTE', 'ORDERNR', 'VERKSAMHET', 'DATUM', 'TID', 'MÄTARSTÄLLNING START',
+                'MÄTARSTÄLLNING STOPP', 'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT',
+                'BRÄNSLE CA', 'PERSON', 'REGNR'];
     var lines = [head.join('\t')];
     pdfRows(selection()).forEach(function (r) {
-      lines.push([r.kund, r.syfte, r.verksamhet, r.datum, r.matStart, r.matStopp, r.km,
-                  r.adressStart, r.adressStopp, r.trangsel, r.tull, r.bransle, r.person, r.regnr].join('\t'));
+      lines.push([r.kund, r.syfte, r.ordernr, r.verksamhet, r.datum, r.tid, r.matStart, r.matStopp, r.km,
+                  r.adressStart, r.adressStopp, r.trangsel, r.bransle, r.person, r.regnr].join('\t'));
     });
     return lines.join('\n');
   }
@@ -855,6 +851,95 @@
     ta.remove();
   }
 
+  /* ---------------- statistik ----------------
+     Grupperar avslutade resor och visar km, bränsle och ersättning. */
+  var STAT_KEYS = [
+    { k: 'dag', t: 'Dag' }, { k: 'vecka', t: 'Vecka' }, { k: 'manad', t: 'Månad' },
+    { k: 'kund', t: 'Kund' }, { k: 'ordernr', t: 'Ordernr' }, { k: 'resa', t: 'Rutt' }
+  ];
+  var statKey = 'manad', statCar = 'ALLA';
+
+  function isoWeek(iso) {
+    var p = iso.split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    var dag = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dag);
+    var start = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    var v = Math.ceil(((d - start) / 86400000 + 1) / 7);
+    return d.getUTCFullYear() + ' v' + pad(v);
+  }
+  function statLabel(t) {
+    if (statKey === 'dag') return t.datum;
+    if (statKey === 'vecka') return isoWeek(t.datum);
+    if (statKey === 'manad') return monthLabel(monthKey(t.datum));
+    if (statKey === 'kund') return t.kund || '(ingen kund)';
+    if (statKey === 'ordernr') return t.ordernr || '(inget ordernr)';
+    return (t.adressStart || '?') + ' → ' + (t.adressStopp || '?');
+  }
+
+  function statRows() {
+    var g = {}, order = [];
+    trips.forEach(function (t) {
+      if (isOpen(t)) return;
+      if (statCar !== 'ALLA' && t.regnr !== statCar) return;
+      var k = statLabel(t);
+      if (!g[k]) { g[k] = { namn: k, antal: 0, km: 0, liter: 0, bransle: 0, ers: 0, trangsel: 0 }; order.push(k); }
+      var r = g[k];
+      r.antal++; r.km += numOf(t.km); r.liter += literFor(t);
+      r.bransle += fuelFor(t); r.ers += ersFor(t); r.trangsel += numOf(t.trangsel);
+    });
+    var rows = order.map(function (k) { return g[k]; });
+    /* tid faller i datumordning, övrigt sorteras på störst kostnad */
+    if (statKey === 'dag' || statKey === 'vecka' || statKey === 'manad') rows.reverse();
+    else rows.sort(function (a, b) { return b.km - a.km; });
+    return rows;
+  }
+
+  function renderStats() {
+    var rows = statRows(), out = $('statOut');
+    if (!rows.length) { out.innerHTML = '<div class="empty">Inga avslutade resor att visa.</div>'; return; }
+    var tot = { antal: 0, km: 0, liter: 0, bransle: 0, ers: 0 };
+    rows.forEach(function (r) {
+      tot.antal += r.antal; tot.km += r.km; tot.liter += r.liter;
+      tot.bransle += r.bransle; tot.ers += r.ers;
+    });
+    var html = '<div class="stat-tot"><b>' + tot.km + ' km</b><span>' + tot.antal + ' resor</span>' +
+      (tot.bransle ? '<b>' + kr(tot.bransle) + '</b><span>bränsle ca ' + dec(tot.liter, 1) + ' l</span>' : '') +
+      (tot.ers ? '<b>' + kr(tot.ers) + '</b><span>milersättning</span>' : '') + '</div>';
+    html += '<div class="stat-list">';
+    rows.forEach(function (r) {
+      html += '<div class="stat-row"><div class="stat-n"><b>' + esc(r.namn) + '</b>' +
+        '<span>' + r.antal + (r.antal === 1 ? ' resa · ' : ' resor · ') + r.km + ' km</span></div>' +
+        '<div class="stat-v">' + (r.bransle ? '<b>' + kr(r.bransle) + '</b><span>' + dec(r.liter, 1) + ' l</span>' : '<span>—</span>') +
+        '</div></div>';
+    });
+    out.innerHTML = html + '</div>';
+  }
+
+  function statsTsv() {
+    var head = [STAT_KEYS.filter(function (k) { return k.k === statKey; })[0].t,
+                'ANTAL RESOR', 'KM', 'LITER', 'BRÄNSLE KR', 'TRÄNGSELSKATT', 'MILERSÄTTNING'];
+    var lines = [head.join('\t')];
+    statRows().forEach(function (r) {
+      lines.push([r.namn, r.antal, r.km, dec(r.liter, 1),
+                  dec(r.bransle, 2), dec(r.trangsel, 2), dec(r.ers, 2)].join('\t'));
+    });
+    return lines.join('\n');
+  }
+
+  function openStats() {
+    segment($('statSeg'), STAT_KEYS.map(function (k) { return k.t; }),
+      STAT_KEYS.filter(function (k) { return k.k === statKey; })[0].t,
+      function (v) {
+        statKey = STAT_KEYS.filter(function (k) { return k.t === v; })[0].k;
+        renderStats();
+      });
+    $('statCar').innerHTML = '<option value="ALLA">Alla bilar</option>' +
+      cars().map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+    $('statCar').value = statCar;
+    renderStats();
+    open($('sheetStats'));
+  }
+
   /* ---------------- start ---------------- */
   function init() {
     load(); render();
@@ -865,6 +950,9 @@
     });
     $('btnSend').addEventListener('click', openSend);
     $('btnSettings').addEventListener('click', openSettings);
+    $('btnStats').addEventListener('click', openStats);
+    $('statCar').addEventListener('change', function () { statCar = this.value; renderStats(); });
+    $('btnCopyStats').addEventListener('click', function () { copyText(statsTsv(), 'Tabellen kopierad'); });
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function (b) {
       b.addEventListener('click', function () { close(b.closest('.sheet')); });
@@ -889,13 +977,8 @@
     $('fAdrStart').addEventListener('input', function () { delete $('sheetTrip').dataset.startLat; });
     $('fAdrStopp').addEventListener('input', function () { delete $('sheetTrip').dataset.stopLat; });
 
-    $('btnTull').addEventListener('click', function (e) { e.preventDefault(); addTull(1); });
-    $('tullReset').addEventListener('click', function (e) {
-      e.preventDefault();
-      $('sheetTrip').dataset.tullAntal = 0;
-      if (numOf(settings.tull)) $('fTull').value = '';
-      renderTull();
-    });
+    $('nowStart').addEventListener('click', function (e) { e.preventDefault(); $('fTidStart').value = nowHM(); });
+    $('nowStopp').addEventListener('click', function (e) { e.preventDefault(); $('fTidStopp').value = nowHM(); });
     $('fMatStart').addEventListener('input', calcKm);
     $('fMatStopp').addEventListener('input', calcKm);
     $('dayPrev').addEventListener('click', function (e) { e.preventDefault(); $('fDatum').value = shiftISO($('fDatum').value || todayISO(), -1); });

@@ -24,9 +24,14 @@
     </g></svg>
     <span class="brand-txt"><i>AIRFILTER GROUP</i><b>KÖRJOURNAL</b></span>
   </div>
+  <div class="topbtns">
+  <button id="btnStats" class="icon-btn" aria-label="Statistik">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 20h16v2H2V2h2v18Zm3-3V9h3v8H7Zm5 0V4h3v13h-3Zm5 0v-6h3v6h-3Z"/></svg>
+  </button>
   <button id="btnSettings" class="icon-btn" aria-label="Inställningar">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/><path fill="currentColor" d="m19.4 13-.1-1 2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L14.8 4h-4l-.4 2.6c-.6.2-1.2.6-1.7 1l-2.4-1-2 3.4L6.4 12l-.1 1-2 1.6 2 3.4 2.4-1c.5.4 1 .8 1.7 1l.4 2.6h4l.4-2.6c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6Z" opacity=".28"/></svg>
   </button>
+  </div>
 </header>
 
 <!-- ===================== LISTA ===================== -->
@@ -82,6 +87,14 @@
     </label>
 
     <label class="field">
+      <span class="lbl">Tid vid start</span>
+      <div class="with-gps">
+        <input type="time" id="fTidStart" class="inp">
+        <button type="button" class="gps-btn" id="nowStart" title="Sätt klockan nu">Nu</button>
+      </div>
+    </label>
+
+    <label class="field">
       <span class="lbl">Var startar du?</span>
       <div class="with-gps">
         <input id="fAdrStart" class="inp" list="dlAdrStart" autocomplete="off" placeholder="Startadress">
@@ -116,10 +129,18 @@
       <div class="chips" id="toChips"></div>
     </label>
 
+    <label class="field">
+      <span class="lbl">Tid framme</span>
+      <div class="with-gps">
+        <input type="time" id="fTidStopp" class="inp">
+        <button type="button" class="gps-btn" id="nowStopp" title="Sätt klockan nu">Nu</button>
+      </div>
+    </label>
+
     <label class="field big">
       <span class="lbl">Mätarställning vid stopp</span>
       <input id="fMatStopp" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="t.ex. 61493">
-      <button type="button" id="btnCalcKm" class="btn btn-ghost btn-calc">Föreslå från kartan</button>
+      <button type="button" id="btnCalcKm" class="btn btn-ghost btn-calc">Hämta mätarställning från kartposition</button>
       <div class="hint" id="calcHint"></div>
     </label>
 
@@ -149,6 +170,13 @@
     </label>
 
     <label class="field">
+      <span class="lbl">Ordernummer <em>valfritt</em></span>
+      <input id="fOrdernr" class="inp" list="dlOrder" autocomplete="off" placeholder="t.ex. 100245">
+      <datalist id="dlOrder"></datalist>
+      <div class="chips" id="orderChips"></div>
+    </label>
+
+    <label class="field">
       <span class="lbl">Verksamhet</span>
       <input id="fVerksamhet" class="inp" list="dlVerk" autocomplete="off" placeholder="FILTER">
       <datalist id="dlVerk"></datalist>
@@ -158,16 +186,6 @@
     <!-- ---------- 4. KOSTNADER ---------- -->
     <section class="step">
       <h3><span class="num">4</span> Kostnader <em>valfritt</em></h3>
-
-    <div class="field">
-      <span class="lbl">Tull</span>
-      <button type="button" id="btnTull" class="btn btn-tull">+ Passerade tull</button>
-      <div class="tull-line">
-        <span id="tullInfo">Inga passager</span>
-        <button type="button" id="tullReset">Nollställ</button>
-      </div>
-      <input id="fTull" class="inp num" inputmode="decimal" placeholder="0 kr">
-    </div>
 
     <label class="field">
       <span class="lbl">Trängselskatt</span>
@@ -235,11 +253,7 @@
       <span class="lbl">Standard verksamhet</span>
       <input id="sVerk" class="inp" placeholder="FILTER">
     </label>
-    <label class="field">
-      <span class="lbl">Tullavgift per passage</span>
-      <span class="rate wide"><input id="sTull" class="inp num" inputmode="decimal" placeholder="0"><i>kr</i></span>
-      <div class="hint">Fylls i automatiskt när du trycker på tull-knappen. Lämna tom om beloppet varierar.</div>
-    </label>
+
     <label class="field">
       <span class="lbl">Mottagare i affärssystemet</span>
       <input id="sMail" class="inp" type="email" inputmode="email" autocapitalize="off" placeholder="korjournal@foretaget.se">
@@ -284,6 +298,27 @@
     </div>
     <button id="btnCopyTsv" class="btn btn-ghost btn-block">Kopiera rader för Excel</button>
     <button id="btnPreviewPdf" class="btn btn-ghost btn-block">Förhandsgranska PDF</button>
+  </div>
+</section>
+
+<!-- ===================== STATISTIK ===================== -->
+<section id="sheetStats" class="sheet" hidden>
+  <div class="sheet-head">
+    <button class="link-btn" data-close>Stäng</button>
+    <h2>Statistik</h2>
+    <span class="link-btn ghost"></span>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <span class="lbl">Gruppera per</span>
+      <div class="seg wrap" id="statSeg"></div>
+    </div>
+    <div class="field">
+      <span class="lbl">Bil</span>
+      <select id="statCar" class="inp"></select>
+    </div>
+    <div id="statOut"></div>
+    <button id="btnCopyStats" class="btn btn-ghost btn-block">Kopiera tabellen för Excel</button>
   </div>
 </section>
 

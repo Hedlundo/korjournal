@@ -141,17 +141,18 @@
   /* ---------- körjournal ---------- */
   var COLS = [
     { k: 'kund',        t: 'KUND',              w: 88 },
-    { k: 'syfte',       t: 'SYFTE',             w: 120 },
+    { k: 'syfte',       t: 'SYFTE',             w: 96 },
+    { k: 'ordernr',     t: 'ORDERNR',           w: 44 },
     { k: 'verksamhet',  t: 'VERKSAMHET',        w: 58 },
     { k: 'datum',       t: 'DATUM',             w: 42, a: 'r' },
+    { k: 'tid',         t: 'TID',               w: 48 },
     { k: 'matStart',    t: 'MÄTARE START',      w: 48, a: 'r' },
     { k: 'matStopp',    t: 'MÄTARE STOPP',      w: 48, a: 'r' },
     { k: 'km',          t: 'KM',                w: 32, a: 'r' },
-    { k: 'adressStart', t: 'ADRESS START',      w: 104 },
-    { k: 'adressStopp', t: 'ADRESS STOPP',      w: 104 },
-    { k: 'trangsel',    t: 'TRÄNGSELSKATT',     w: 44, a: 'r' },
-    { k: 'tull',        t: 'TULL',              w: 34, a: 'r' },
-    { k: 'bransle',     t: 'BRÄNSLE CA',        w: 40, a: 'r' },
+    { k: 'adressStart', t: 'ADRESS START',      w: 98 },
+    { k: 'adressStopp', t: 'ADRESS STOPP',      w: 98 },
+    { k: 'trangsel',    t: 'TRÄNGSEL SKATT',    w: 52, a: 'r' },
+    { k: 'bransle',     t: 'BRÄNSLE CA',        w: 48, a: 'r' },
     { k: 'person',      t: 'PERSON',            w: 68 },
     { k: 'regnr',       t: 'REGNR',             w: 40 }
   ];
@@ -168,6 +169,8 @@
     var w = [], x0 = M, xs = [];
     for (i = 0; i < COLS.length; i++) { w[i] = COLS[i].w * scale; xs[i] = x0; x0 += w[i]; }
     var right = M + (PW - 2 * M);
+    function ci(key) { for (var q = 0; q < COLS.length; q++) if (COLS[q].k === key) return q; return 0; }
+    function rx(key) { return xs[ci(key)] + w[ci(key)] - PAD; }
 
     var pages = [], page = null, y = 0, pageNo = 0;
 
@@ -207,7 +210,7 @@
 
     header();
 
-    var totKm = 0, totTr = 0, totTull = 0, totFuel = 0;
+    var totKm = 0, totTr = 0, totFuel = 0;
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r], cells = [], maxLines = 1;
       for (i = 0; i < COLS.length; i++) {
@@ -229,7 +232,6 @@
       y -= rh;
       totKm += Number(row._km) || 0;
       totTr += Number(row._trangsel) || 0;
-      totTull += Number(row._tull) || 0;
       totFuel += Number(row._bransle) || 0;
     }
 
@@ -237,11 +239,10 @@
     if (y - 20 < M + 26) header();
     page.rect(M, y - 18, right - M, 18, DARK);
     page.text('TOTALT  ' + rows.length + ' resor', xs[0] + PAD, y - 12, 8, true, 'l', null, 1);
-    page.text(String(totKm), xs[6] + w[6] - PAD, y - 12, 8.5, true, 'r', null, 1);
-    page.text('km', xs[7] + PAD, y - 12, 7, false, 'l', null, 0.75);
-    page.text(totTr ? fmtKr(totTr) : '', xs[9] + w[9] - PAD, y - 12, 8, true, 'r', null, 1);
-    page.text(totTull ? fmtKr(totTull) : '', xs[10] + w[10] - PAD, y - 12, 8, true, 'r', null, 1);
-    page.text(totFuel ? fmtKr(Math.round(totFuel)) : '', xs[11] + w[11] - PAD, y - 12, 8, true, 'r', null, 1);
+    page.text(String(totKm), rx('km'), y - 12, 8.5, true, 'r', null, 1);
+    page.text('km', xs[ci('adressStart')] + PAD, y - 12, 7, false, 'l', null, 0.75);
+    page.text(totTr ? fmtKr(totTr) : '', rx('trangsel'), y - 12, 8, true, 'r', null, 1);
+    page.text(totFuel ? fmtKr(Math.round(totFuel)) : '', rx('bransle'), y - 12, 8, true, 'r', null, 1);
     y -= 18;
 
     /* sammanställning av ersättning */
