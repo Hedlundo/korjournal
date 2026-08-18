@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '1.7.0';
+  var VER = '1.8.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -123,6 +123,17 @@
     toast._t = setTimeout(function () { t.hidden = true; }, ms || 2200);
   }
 
+  /* inskickat: resor som följt med i en utskickad körjournal */
+  function markSent(sel) {
+    var stamp = todayISO(), ids = {}, i;
+    for (i = 0; i < sel.length; i++) ids[sel[i].id] = 1;
+    for (i = 0; i < trips.length; i++) if (ids[trips[i].id] && !trips[i].sentAt) trips[i].sentAt = stamp;
+    saveTrips(); render();
+  }
+  function unsent() {
+    return trips.filter(function (t) { return !t.sentAt; });
+  }
+
   function sortedTrips() {
     return trips.slice().sort(function (a, b) {
       if (a.datum !== b.datum) return a.datum < b.datum ? 1 : -1;
@@ -189,17 +200,23 @@
       var mk = monthKey(t.datum);
       if (mk !== curM) {
         curM = mk;
-        var mkm = 0, mc = 0;
-        trips.forEach(function (x) { if (monthKey(x.datum) === mk) { mkm += numOf(x.km); mc++; } });
+        var mkm = 0, mc = 0, mej = 0;
+        trips.forEach(function (x) {
+          if (monthKey(x.datum) !== mk) return;
+          mkm += numOf(x.km); mc++; if (!x.sentAt) mej++;
+        });
         html += '<div class="month-head"><span>' + monthLabel(mk) + '</span>' +
-                '<span class="tot">' + mc + ' resor · ' + mkm + ' km</span></div>';
+                '<span class="tot">' + mkm + ' km' +
+                (mej ? ' · <em>' + mej + ' ej inskickade</em>' : ' · allt inskickat') + '</span></div>';
       }
       var d = t.datum.split('-');
       html += '<button class="trip" data-id="' + t.id + '">' +
         '<span class="d"><b>' + d[2] + '</b><i>' + weekday(t.datum) + '</i></span>' +
         '<span class="mid"><b>' + esc(t.kund || '—') + '</b>' +
         '<span>' + esc(t.adressStart || '') + ' → ' + esc(t.adressStopp || '') + '</span></span>' +
-        '<span class="km">' + numOf(t.km) + ' <i>km</i></span></button>';
+        '<span class="km">' + numOf(t.km) + ' <i>km</i>' +
+        (t.sentAt ? '<i class="flag" title="Inskickad ' + t.sentAt + '">✓ inskickad</i>' : '') +
+        '</span></button>';
     });
     list.innerHTML = html;
     Array.prototype.forEach.call(list.querySelectorAll('.trip'), function (b) {
@@ -238,6 +255,19 @@
     $('fAdrStopp').value = t.adressStopp || '';
     $('fMatStart').value = t.matStart || '';
     $('fMatStopp').value = t.matStopp || '';
+    if (t.sentAt) {
+      $('sentBar').hidden = false;
+      $('sentBar').innerHTML = '<span>Inskickad ' + t.sentAt + '</span>' +
+        '<button type="button" id="undoSent">Markera som ej inskickad</button>';
+      $('undoSent').onclick = function (e) {
+        e.preventDefault();
+        for (var i = 0; i < trips.length; i++) if (trips[i].id === id) delete trips[i].sentAt;
+        saveTrips(); render();
+        $('sentBar').hidden = true;
+        toast('Markerad som ej inskickad');
+      };
+    } else $('sentBar').hidden = true;
+
     delete $('sheetTrip').dataset.startLat;
     delete $('sheetTrip').dataset.stopLat;
     $('calcHint').textContent = '';
@@ -527,6 +557,12 @@
     $('sVerk').value = settings.verk || '';
     $('sTull').value = settings.tull || '';
     $('sMail').value = settings.mail || '';
+    var bi = $('backupInfo'), sedan = settings.backupAt
+      ? trips.filter(function (t) { return (t.createdAt || '').slice(0, 10) > settings.backupAt; }).length : trips.length;
+    bi.className = 'backup' + (sedan > 5 ? ' warn' : '');
+    bi.textContent = settings.backupAt
+      ? 'Senaste säkerhetskopia ' + settings.backupAt + (sedan ? ' · ' + sedan + ' resor har tillkommit sedan dess' : ' · allt är säkrat')
+      : 'Ingen säkerhetskopia tagen ännu';
     $('verInfo').textContent = 'Körjournal ' + VER + ' · ' + trips.length + ' resor sparade i den här telefonen';
     open($('sheetSettings'));
   }
@@ -584,11 +620,14 @@
     var months = Object.keys(keys).sort().reverse();
     if (!months.length) { toast('Inga resor att skicka in'); return; }
 
-    $('sendPeriod').innerHTML = months.map(function (m) {
-      return '<option value="' + m + '">' + monthLabel(m) + '</option>';
-    }).join('') + '<option value="ALLA">Alla resor</option>';
+    var kvar = unsent().length;
+    $('sendPeriod').innerHTML =
+      (kvar ? '<option value="EJ">Ej inskickade (' + kvar + ' resor)</option>' : '') +
+      months.map(function (m) {
+        return '<option value="' + m + '">' + monthLabel(m) + '</option>';
+      }).join('') + '<option value="ALLA">Alla resor</option>';
     var cur = monthKey(todayISO());
-    $('sendPeriod').value = months.indexOf(cur) >= 0 ? cur : months[0];
+    $('sendPeriod').value = kvar ? 'EJ' : (months.indexOf(cur) >= 0 ? cur : months[0]);
 
     var pers = {};
     trips.forEach(function (t) { if (t.person) pers[t.person] = 1; });
@@ -605,7 +644,8 @@
   function selection() {
     var per = $('sendPeriod').value, pers = $('sendPerson').value;
     return trips.filter(function (t) {
-      if (per !== 'ALLA' && monthKey(t.datum) !== per) return false;
+      if (per === 'EJ') { if (t.sentAt) return false; }
+      else if (per !== 'ALLA' && monthKey(t.datum) !== per) return false;
       if (pers !== 'ALLA' && t.person !== pers) return false;
       return true;
     }).sort(function (a, b) {
@@ -696,7 +736,7 @@
   }
   function periodLabel() {
     var p = $('sendPeriod').value;
-    return p === 'ALLA' ? 'Alla resor' : monthLabel(p);
+    return p === 'ALLA' ? 'Alla resor' : p === 'EJ' ? 'Ej inskickade resor' : monthLabel(p);
   }
 
   function pdfRows(sel) {
@@ -762,7 +802,7 @@
 
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({ files: [file], title: subject, text: body })
-        .then(function () { toast('Körjournalen är skickad till mejlappen'); })
+        .then(function () { markSent(r.sel); toast('Skickad · ' + r.sel.length + ' resor bockade av'); })
         .catch(function (err) {
           if (err && err.name === 'AbortError') return;
           fallback(r, subject, body);
@@ -774,6 +814,7 @@
 
   function fallback(r, subject, body) {
     downloadBlob(r.blob, r.name);
+    markSent(r.sel);
     toast('PDF sparad – bifoga den i mejlet', 4000);
     setTimeout(function () {
       window.location.href = 'mailto:' + encodeURIComponent(settings.mail || '') +
@@ -886,6 +927,7 @@
     $('btnExport').addEventListener('click', function () {
       var data = JSON.stringify({ v: 1, exported: new Date().toISOString(), settings: settings, trips: trips }, null, 2);
       downloadBlob(new Blob([data], { type: 'application/json' }), 'korjournal-backup-' + todayISO() + '.json');
+      settings.backupAt = todayISO(); saveSettings();
       toast('Säkerhetskopia sparad');
     });
     $('btnImport').addEventListener('click', function () { $('fileImport').click(); });
@@ -909,7 +951,13 @@
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     }
+    /* utan detta får webbläsaren slänga lagringen när utrymmet tryter */
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+
     if (!settings.setup) setTimeout(openSettings, 400);
+    else if (trips.length >= 10 && !settings.backupAt) {
+      setTimeout(function () { toast('Ta en säkerhetskopia i inställningarna – datan finns bara här', 5000); }, 1200);
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

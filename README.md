@@ -77,10 +77,35 @@ HTTPS krävs för att appen ska gå att installera på hemskärmen och fungera o
 * **iPhone:** öppna adressen i Safari → Dela → *Lägg till på hemskärmen*.
 * **Android:** öppna i Chrome → menyn → *Installera app*.
 
-## Säkerhetskopia
+## Var ligger resorna?
 
-Inställningar → *Exportera säkerhetskopia (JSON)*. Data ligger bara i telefonen, så ta en kopia
-innan du byter telefon eller rensar webbläsardata.
+I telefonens `localStorage`, under appens adress. Ingen server, ingen molnkopia. Det betyder att
+datan försvinner om du rensar webbläsardata, avinstallerar appen eller byter telefon.
+
+Tre skydd finns:
+
+1. **Säkerhetskopia** – Inställningar → *Exportera säkerhetskopia (JSON)*. Filen innehåller alla
+   resor och inställningar och läses tillbaka med *Importera säkerhetskopia*, även på en annan
+   telefon. Datumet för senaste kopian visas i Inställningar, med varning när det tillkommit
+   resor sedan dess.
+2. **De inskickade PDF:erna** är i praktiken ett arkiv – varje utskick innehåller alla rader för
+   perioden och ligger kvar i affärssystemets inkorg.
+3. Appen ber webbläsaren om **beständig lagring** (`navigator.storage.persist`), vilket normalt
+   beviljas när appen är installerad på hemskärmen och skyddar mot automatisk rensning.
+
+## Vad är inskickat?
+
+Varje resa får ett datum i `sentAt` när den följt med i ett utskick. Det syns på tre ställen:
+
+* månadsraden i listan: *"1 741 km · 2 ej inskickade"*
+* en grön bock på raden för resor som är inskickade
+* en banner högst upp i resan när du öppnar den, med *Markera som ej inskickad* om du behöver
+  skicka om
+
+I *Skicka in* ligger **Ej inskickade** överst i periodlistan och är förvald, så nästa utskick tar
+med precis det som saknas – inga dubletter, inget som glöms.
+
+## Säkerhetskopia
 
 ## Ny version
 
