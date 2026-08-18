@@ -105,8 +105,6 @@ Varje resa får ett datum i `sentAt` när den följt med i ett utskick. Det syns
 I *Skicka in* ligger **Ej inskickade** överst i periodlistan och är förvald, så nästa utskick tar
 med precis det som saknas – inga dubletter, inget som glöms.
 
-## Säkerhetskopia
-
 ## Ny version
 
 Höj `CACHE` i `sw.js` och `VER` i `app.js` när du publicerar ändringar, annars kan telefoner
