@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.0.0';
+  var VER = '4.0.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -149,6 +149,10 @@
     for (i = 0; i < trips.length; i++) if (ids[trips[i].id] && !trips[i].sentAt) trips[i].sentAt = stamp;
     saveTrips(); render();
   }
+  /* "1 resa" men "2 resor" */
+  function resor(n) { return n + (n === 1 ? ' resa' : ' resor'); }
+  function inskickade(n) { return resor(n) + (n === 1 ? ' inskickad' : ' inskickade'); }
+
   function unsent() {
     return trips.filter(function (t) { return !t.sentAt; });
   }
@@ -212,7 +216,7 @@
     });
     $('summary').innerHTML =
       '<div class="big">' + km + '<span>km</span></div>' +
-      '<div class="meta">' + MONTHS[+thisMonth.slice(5, 7) - 1] + ' · ' + cnt + ' resor</div>' +
+      '<div class="meta">' + MONTHS[+thisMonth.slice(5, 7) - 1] + ' · ' + resor(cnt) + '</div>' +
       (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '') +
       '<button type="button" id="summarySend" class="btn btn-primary send-top">Skicka in körjournal</button>';
     $('summarySend').addEventListener('click', openSend);
@@ -573,7 +577,7 @@
       });
     } else {
       close($('sheetTrip'));
-      toast(pagaende ? 'Resan är påbörjad – avsluta den när du är framme' : 'Resa sparad · ' + f.km + ' km',
+      toast(pagaende ? 'Resan är påbörjad – avsluta den när du är framme' : 'Resan sparad · ' + f.km + ' km',
             pagaende ? 3500 : 2200);
     }
   }
@@ -690,9 +694,10 @@
       ? trips.filter(function (t) { return (t.createdAt || '').slice(0, 10) > settings.backupAt; }).length : trips.length;
     bi.className = 'backup' + (sedan > 5 ? ' warn' : '');
     bi.textContent = settings.backupAt
-      ? 'Senaste säkerhetskopia ' + settings.backupAt + (sedan ? ' · ' + sedan + ' resor har tillkommit sedan dess' : ' · allt är säkrat')
+      ? 'Senaste säkerhetskopia ' + settings.backupAt + (sedan ? ' · ' + resor(sedan) + ' har tillkommit sedan dess' : ' · allt är säkrat')
       : 'Ingen säkerhetskopia tagen ännu';
-    $('verInfo').textContent = 'Körjournal ' + VER + ' · ' + trips.length + ' resor sparade i den här telefonen';
+    $('verInfo').textContent = 'Körjournal ' + VER + ' · ' + resor(trips.length) +
+      (trips.length === 1 ? ' sparad' : ' sparade') + ' i den här telefonen';
   }
 
   /* bilarna är fasta; bara regnumret går att fylla i */
@@ -724,7 +729,7 @@
 
     var kvar = unsent().length;
     $('sendPeriod').innerHTML =
-      (kvar ? '<option value="EJ">Ej inskickade (' + kvar + ' resor)</option>' : '') +
+      (kvar ? '<option value="EJ">Ej inskickade (' + resor(kvar) + ')</option>' : '') +
       months.map(function (m) {
         return '<option value="' + m + '">' + monthLabel(m) + '</option>';
       }).join('') + '<option value="ALLA">Alla resor</option>';
@@ -920,7 +925,7 @@
 
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({ files: [file], title: subject, text: body })
-        .then(function () { markSent(r.sel); toast('Skickad · ' + r.sel.length + ' resor bockade av'); })
+        .then(function () { markSent(r.sel); toast(inskickade(r.sel.length) + ' och avbockade'); })
         .catch(function (err) {
           if (err && err.name === 'AbortError') return;
           fallback(r, subject, body);
@@ -967,7 +972,7 @@
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok || !data.ok) throw new Error(data.error || ('Servern svarade ' + res.status));
         markSent(r.sel);
-        aterstall('Inskickad till ' + (data.till || settings.mail) + ' · ' + r.sel.length + ' resor');
+        aterstall(inskickade(r.sel.length) + ' till ' + (data.till || settings.mail));
         close($('sheetSend'));
       });
     }).catch(function (err) {
@@ -1091,7 +1096,7 @@
       tr += numOf(t.trangsel); liter += literFor(t); if (isOpen(t)) oppna++;
     });
     $('adminSum').innerHTML =
-      '<div class="row"><span>Resor</span><b>' + rows.length + (oppna ? ' (' + oppna + ' påbörjade)' : '') + '</b></div>' +
+      '<div class="row"><span>Resor</span><b>' + rows.length + (oppna ? ' (' + oppna + (oppna === 1 ? ' påbörjad' : ' påbörjade') + ')' : '') + '</b></div>' +
       '<div class="row"><span>Körsträcka</span><b>' + km + ' km</b></div>' +
       '<div class="row"><span>Milersättning</span><b>' + kr(ers) + '</b></div>' +
       '<div class="row"><span>Trängselskatt</span><b>' + kr(tr) + '</b></div>' +
@@ -1181,13 +1186,13 @@
       tot.antal += r.antal; tot.km += r.km; tot.liter += r.liter;
       tot.bransle += r.bransle; tot.ers += r.ers;
     });
-    var html = '<div class="stat-tot"><b>' + tot.km + ' km</b><span>' + tot.antal + ' resor</span>' +
+    var html = '<div class="stat-tot"><b>' + tot.km + ' km</b><span>' + resor(tot.antal) + '</span>' +
       (tot.bransle ? '<b>' + kr(tot.bransle) + '</b><span>bränsle ca ' + dec(tot.liter, 1) + ' l</span>' : '') +
       (tot.ers ? '<b>' + kr(tot.ers) + '</b><span>milersättning</span>' : '') + '</div>';
     html += '<div class="stat-list">';
     rows.forEach(function (r) {
       html += '<div class="stat-row"><div class="stat-n"><b>' + esc(r.namn) + '</b>' +
-        '<span>' + r.antal + (r.antal === 1 ? ' resa · ' : ' resor · ') + r.km + ' km</span></div>' +
+        '<span>' + resor(r.antal) + ' · ' + r.km + ' km</span></div>' +
         '<div class="stat-v">' + (r.bransle ? '<b>' + kr(r.bransle) + '</b><span>' + dec(r.liter, 1) + ' l</span>' : '<span>—</span>') +
         '</div></div>';
     });
@@ -1337,10 +1342,10 @@
         try {
           var d = JSON.parse(fr.result);
           if (!d.trips) throw new Error('fel format');
-          if (!confirm('Ersätt ' + trips.length + ' resor med ' + d.trips.length + ' från filen?')) return;
+          if (!confirm('Ersätt ' + resor(trips.length) + ' med ' + d.trips.length + ' från filen?')) return;
           trips = d.trips; if (d.settings) settings = d.settings;
           saveTrips(); saveSettings(); render(); renderAdmin(); renderBilar();
-          toast('Importerat: ' + trips.length + ' resor');
+          toast('Importerat: ' + resor(trips.length));
         } catch (e) { toast('Kunde inte läsa filen'); }
       };
       fr.readAsText(f);
