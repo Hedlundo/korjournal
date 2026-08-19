@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.1.1';
+  var VER = '3.2.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -616,20 +616,26 @@
       toast('Den här webbläsaren stödjer inte Face ID-lås', 4000);
       return;
     }
-    var kod = prompt('Välj en reservkod (4–8 siffror) om Face ID inte fungerar:');
-    if (!kod || !/^[0-9]{4,8}$/.test(kod)) { toast('Koden måste vara 4–8 siffror'); return; }
+    var kod = up($('lockNewCode').value);
+    if (!/^[0-9]{4,8}$/.test(kod)) {
+      toast('Skriv en reservkod på 4–8 siffror först', 3500);
+      $('lockNewCode').focus();
+      return;
+    }
+    toast('Godkänn med Face ID…', 6000);
     lockCreate().then(function (id) {
       return sha(kod).then(function (h) {
         settings.lockId = id; settings.lockCode = h;
-        saveSettings(); renderLockState();
+        saveSettings();
+        $('lockNewCode').value = '';
+        renderLockState();
         toast('Låset är på – Face ID krävs nästa gång appen öppnas', 4000);
       });
-    }).catch(function () {
-      toast('Telefonen ville inte skapa något lås', 4000);
+    }).catch(function (err) {
+      toast('Telefonen skapade inget lås: ' + ((err && err.name) || 'okänt fel'), 5000);
     });
   }
   function disableLock() {
-    if (!confirm('Ta bort låset? Appen öppnas då utan Face ID.')) return;
     delete settings.lockId; delete settings.lockCode;
     saveSettings(); renderLockState();
     toast('Låset borttaget');
@@ -641,6 +647,7 @@
       : bioSupported() ? 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.'
                        : 'Den här webbläsaren stödjer inte Face ID-lås.';
     $('btnLockOn').hidden = pa;
+    $('lockCodeField').hidden = pa;
     $('btnLockOff').hidden = !pa;
   }
 

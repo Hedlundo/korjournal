@@ -310,7 +310,12 @@
     <section class="step">
       <h3><span class="num">4</span> Lås</h3>
       <div id="lockState" class="hint"></div>
-      <button id="btnLockOn" class="btn btn-ghost btn-block">Lås appen med Face ID</button>
+      <label class="field" id="lockCodeField">
+        <span class="lbl">Reservkod <em>4–8 siffror</em></span>
+        <input id="lockNewCode" class="inp num" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="••••">
+        <div class="hint">Används om Face ID inte svarar. Skriv koden först, tryck sedan på knappen.</div>
+      </label>
+      <button id="btnLockOn" class="btn btn-primary btn-block">Lås appen med Face ID</button>
       <button id="btnLockOff" class="btn btn-danger btn-block" hidden>Ta bort låset</button>
     </section>
 

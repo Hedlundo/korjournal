@@ -1,5 +1,5 @@
 /* Offline-cache för Körjournal. Höj CACHE när du släpper en ny version. */
-var CACHE = 'korjournal-v15';
+var CACHE = 'korjournal-v16';
 var ASSETS = [
   './',
   './index.html',
@@ -25,25 +25,42 @@ self.addEventListener('activate', function (e) {
 
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  var url = new URL(e.request.url);
   // adressuppslag och andra externa anrop går förbi cachen
-  if (new URL(e.request.url).origin !== self.location.origin) return;
-  e.respondWith(
-    caches.match(e.request).then(function (hit) {
-      if (hit) {
-        // uppdatera i bakgrunden
-        fetch(e.request).then(function (res) {
-          if (res && res.ok) caches.open(CACHE).then(function (c) { c.put(e.request, res.clone()); });
-        }).catch(function () {});
-        return hit;
-      }
-      return fetch(e.request).then(function (res) {
-        if (res && res.ok && e.request.url.indexOf('http') === 0) {
-          var clone = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(e.request, clone); });
+  if (url.origin !== self.location.origin) return;
+
+  /* Appens egna filer hämtas från nätet först, så en ny version slår
+     igenom direkt. Cachen är reserv när telefonen är offline. */
+  var arShell = /\.(html|js|css|webmanifest)$/.test(url.pathname) || url.pathname.slice(-1) === '/';
+
+  if (arShell) {
+    e.respondWith(
+      fetch(e.request).then(function (res) {
+        if (res && res.ok) {
+          var kopia = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, kopia); });
         }
         return res;
-      }).catch(function () { return caches.match('./index.html'); });
+      }).catch(function () {
+        return caches.match(e.request).then(function (hit) {
+          return hit || caches.match('./index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  /* Ikoner och annat statiskt: cache först, uppdatera i bakgrunden. */
+  e.respondWith(
+    caches.match(e.request).then(function (hit) {
+      var hamta = fetch(e.request).then(function (res) {
+        if (res && res.ok) {
+          var kopia = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, kopia); });
+        }
+        return res;
+      }).catch(function () { return hit; });
+      return hit || hamta;
     })
   );
 });
-
