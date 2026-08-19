@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.1.0';
+  var VER = '3.1.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -564,7 +564,7 @@
     return crypto.subtle.digest('SHA-256', new TextEncoder().encode('kj:' + txt)).then(b64);
   }
   function bioSupported() {
-    return !!(window.PublicKeyCredential && navigator.credentials && location.protocol === 'https:');
+    return !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
   }
 
   function lockCreate() {
@@ -603,14 +603,17 @@
     document.body.style.overflow = '';
   }
   function tryBio() {
-    lockVerify().then(hideLock).catch(function () {
-      $('lockMsg').textContent = 'Face ID svarade inte. Försök igen eller använd reservkoden.';
+    lockVerify().then(hideLock).catch(function (err) {
+      var namn = err && err.name;
+      $('lockMsg').textContent = (namn === 'NotAllowedError' || namn === 'InvalidStateError')
+        ? 'Ingen nyckel för den här enheten. Använd reservkoden och slå på låset igen under Admin.'
+        : 'Face ID svarade inte. Försök igen eller använd reservkoden.';
     });
   }
 
   function enableLock() {
     if (!bioSupported()) {
-      toast('Face ID kräver att appen körs över https', 4000);
+      toast('Den här webbläsaren stödjer inte Face ID-lås', 4000);
       return;
     }
     var kod = prompt('Välj en reservkod (4–8 siffror) om Face ID inte fungerar:');
@@ -636,7 +639,7 @@
     $('lockState').textContent = pa
       ? 'Låst med Face ID. Reservkod finns.'
       : bioSupported() ? 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.'
-                       : 'Face ID kräver https – fungerar först när appen är publicerad.';
+                       : 'Den här webbläsaren stödjer inte Face ID-lås.';
     $('btnLockOn').hidden = pa;
     $('btnLockOff').hidden = !pa;
   }
