@@ -18,10 +18,25 @@ gul ram och knappen *Avsluta* – öppna den när du är framme och fyll i reste
 följer aldrig med i ett utskick.
 
 KM räknas ut automatiskt. Mätarställning start och adress start förifylls från förra resan.
-PERSON och REGNR väljs med ett tryck: två förare (Ebba / George) och två bilar (WXE84R plus en
-till som fylls i när regnumret är känt). Namn och regnummer ändras i Inställningar, som också
-bestämmer vilken förare och bil som är förvald.
 DATUM skrivs som ÅÅMMDD i PDF/Excel-exporten, precis som i det befintliga Excel-arket.
+
+## Fasta val – föraren konfigurerar ingenting
+
+Allt som inte är en resa ligger som konstanter högst upp i `app.js`:
+
+| | |
+|---|---|
+| Förare | EBBA, GEORGE |
+| Bilar | **BMW520D** – 25 kr/mil, 0,7 l/mil · **BUDBIL** – ingen milersättning, 1,0 l/mil |
+| Verksamhet | FILTER, MUSIK |
+| Mottagare | info@airstrategy.se |
+
+Lägg till en förare eller ändra en förbrukning genom att ändra `DRIVERS`, `CARS` eller
+`VERKSAMHETER`. Föraren möter bara knappar: förare, bil, verksamhet. Det finns ingen
+inställningsvy – regnummer, dieselpris, mottagaradress och säkerhetskopia ligger i adminpanelen.
+
+Bilen sparas både som namn (BMW520D/BUDBIL) och som regnummer i journalen. Saknar budbilen
+regnummer skrivs `BUDBIL` tills det fylls i under Admin → Bilar.
 
 ## Adresser från kartan
 
@@ -39,8 +54,7 @@ webbappar som inte är öppna. För automatisk resegistrering krävs en riktig n
 
 ## Ersättning
 
-Varje bil har ett belopp per mil i Inställningar (WXE84R = 25 kr/mil). Sätt 0 kr/mil på
-företagsbilen, så räknas ingen milersättning för den – körningen redovisas ändå.
+BMW520D ger 25 kr/mil. BUDBIL ger ingen milersättning – körningen loggas och kostnadsförs ändå.
 
 Sammanställningen är uppdelad i tre delar och visas i appen, i PDF:en och i mejltexten:
 
@@ -49,7 +63,7 @@ Sammanställningen är uppdelad i tre delar och visas i appen, i PDF:en och i me
 * **Att ersätta** – milersättning + utlägg
 
 Därunder ligger **beräknad bränslekostnad** för bokföringen: varje bil har en förbrukning i
-l/mil och dieselpriset sätts en gång i Inställningar. Kostnaden räknas per resa (syns direkt i
+l/mil och dieselpriset sätts i adminpanelen. Kostnaden räknas per resa (syns direkt i
 formuläret under kilometerrutan), som egen kolumn i PDF:en och som summa per bil. Den ingår
 inte i ersättningen.
 

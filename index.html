@@ -31,9 +31,6 @@
   <button id="btnStats" class="icon-btn" aria-label="Statistik">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 20h16v2H2V2h2v18Zm3-3V9h3v8H7Zm5 0V4h3v13h-3Zm5 0v-6h3v6h-3Z"/></svg>
   </button>
-  <button id="btnSettings" class="icon-btn" aria-label="Inställningar">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/><path fill="currentColor" d="m19.4 13-.1-1 2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L14.8 4h-4l-.4 2.6c-.6.2-1.2.6-1.7 1l-2.4-1-2 3.4L6.4 12l-.1 1-2 1.6 2 3.4 2.4-1c.5.4 1 .8 1.7 1l.4 2.6h4l.4-2.6c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6Z" opacity=".28"/></svg>
-  </button>
   </div>
 </header>
 
@@ -179,11 +176,10 @@
       <div class="chips" id="orderChips"></div>
     </label>
 
-    <label class="field">
+    <div class="field">
       <span class="lbl">Verksamhet</span>
-      <input id="fVerksamhet" class="inp" list="dlVerk" autocomplete="off" placeholder="FILTER">
-      <datalist id="dlVerk"></datalist>
-    </label>
+      <div class="seg" id="verkSeg"></div>
+    </div>
     </section>
 
     <!-- ---------- 4. KOSTNADER ---------- -->
@@ -202,75 +198,6 @@
   </div>
 </section>
 
-<!-- ===================== INSTÄLLNINGAR ===================== -->
-<section id="sheetSettings" class="sheet" hidden>
-  <div class="sheet-head">
-    <button class="link-btn" data-close>Stäng</button>
-    <h2>Inställningar</h2>
-    <button class="link-btn strong" id="btnSaveSettings">Spara</button>
-  </div>
-  <div class="sheet-body">
-    <div class="field">
-      <span class="lbl">Förare i appen</span>
-      <div class="two">
-        <input id="sDriver1" class="inp" placeholder="EBBA" autocomplete="off">
-        <input id="sDriver2" class="inp" placeholder="GEORGE" autocomplete="off">
-      </div>
-      <div class="hint">Namnen du kan välja mellan när du registrerar en resa.</div>
-    </div>
-    <div class="field">
-      <span class="lbl">Standardförare</span>
-      <div class="seg" id="sDefaultDriver"></div>
-    </div>
-    <div class="field">
-      <span class="lbl">Bil 1</span>
-      <input id="sCar1" class="inp" placeholder="WXE84R" autocomplete="off" autocapitalize="characters">
-      <div class="two">
-        <span class="rate"><input id="sMil1" class="inp num" inputmode="decimal" placeholder="25"><i>kr/mil</i></span>
-        <span class="rate"><input id="sForb1" class="inp num" inputmode="decimal" placeholder="0,62"><i>l/mil</i></span>
-      </div>
-    </div>
-    <div class="field">
-      <span class="lbl">Bil 2</span>
-      <input id="sCar2" class="inp" placeholder="Bil 2 – regnr" autocomplete="off" autocapitalize="characters">
-      <div class="two">
-        <span class="rate"><input id="sMil2" class="inp num" inputmode="decimal" placeholder="0"><i>kr/mil</i></span>
-        <span class="rate"><input id="sForb2" class="inp num" inputmode="decimal" placeholder="2,8"><i>l/mil</i></span>
-      </div>
-      <div class="hint">Sätt 0 kr/mil på företagsbilen – den ska bokföras, inte ge milersättning.</div>
-    </div>
-    <label class="field">
-      <span class="lbl">Dieselpris</span>
-      <span class="rate wide"><input id="sDiesel" class="inp num" inputmode="decimal" placeholder="20,50"><i>kr/liter</i></span>
-      <div class="hint">Används för att uppskatta bränslekostnaden per resa. Ingen ersättning.</div>
-    </label>
-    <div class="field">
-      <span class="lbl">Standardbil</span>
-      <div class="seg" id="sDefaultCar"></div>
-    </div>
-    <label class="field">
-      <span class="lbl">Standardadress <em>utgångspunkt</em></span>
-      <input id="sHome" class="inp" placeholder="LAGAVÄGEN 23 STHLM">
-    </label>
-    <label class="field">
-      <span class="lbl">Standard verksamhet</span>
-      <input id="sVerk" class="inp" placeholder="FILTER">
-    </label>
-
-    <label class="field">
-      <span class="lbl">Mottagare i affärssystemet</span>
-      <input id="sMail" class="inp" type="email" inputmode="email" autocapitalize="off" placeholder="korjournal@foretaget.se">
-      <div class="hint">Adressen som körjournalen mejlas till.</div>
-    </label>
-
-    <div class="divider"></div>
-    <div class="backup" id="backupInfo"></div>
-    <button id="btnExport" class="btn btn-ghost btn-block">Exportera säkerhetskopia (JSON)</button>
-    <button id="btnImport" class="btn btn-ghost btn-block">Importera säkerhetskopia</button>
-    <input type="file" id="fileImport" accept="application/json,.json" hidden>
-    <div class="hint center" id="verInfo"></div>
-  </div>
-</section>
 
 <!-- ===================== SKICKA IN ===================== -->
 <section id="sheetSend" class="sheet" hidden>
@@ -335,7 +262,17 @@
   <div class="sheet-body">
 
     <section class="step">
-      <h3><span class="num">1</span> Dieselpris</h3>
+      <h3><span class="num">1</span> Bilar</h3>
+      <div class="hint">Milersättning och förbrukning är fasta per bil. Fyll bara i regnumret.</div>
+      <div id="bilList"></div>
+      <label class="field">
+        <span class="lbl">Mottagare i affärssystemet</span>
+        <input id="adminMail" class="inp" type="email" inputmode="email" autocapitalize="off" placeholder="info@airstrategy.se">
+      </label>
+    </section>
+
+    <section class="step">
+      <h3><span class="num">2</span> Dieselpris</h3>
       <div class="hint">Priset gäller för alla resor från och med datumet, tills du lägger in ett nytt. Äldre resor behåller sitt pris.</div>
       <div id="prisList" class="pris-list"></div>
       <div class="two">
@@ -346,11 +283,20 @@
     </section>
 
     <section class="step">
-      <h3><span class="num">2</span> Alla resor</h3>
+      <h3><span class="num">3</span> Alla resor</h3>
       <input id="adminSok" class="inp" placeholder="Sök kund, ordernr, adress, förare…" autocomplete="off">
       <div id="adminSum" class="recap"></div>
       <div class="table-wrap"><table id="adminTabell"></table></div>
       <button id="btnAdminTsv" class="btn btn-ghost btn-block">Kopiera loggen för Excel</button>
+    </section>
+
+    <section class="step">
+      <h3><span class="num">4</span> Säkerhetskopia</h3>
+      <div class="backup" id="backupInfo"></div>
+      <button id="btnExport" class="btn btn-ghost btn-block">Exportera säkerhetskopia (JSON)</button>
+      <button id="btnImport" class="btn btn-ghost btn-block">Importera säkerhetskopia</button>
+      <input type="file" id="fileImport" accept="application/json,.json" hidden>
+      <div class="hint center" id="verInfo"></div>
     </section>
 
   </div>
