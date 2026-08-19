@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.2.2';
+  var VER = '4.3.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -1319,11 +1319,7 @@
     $('sendPeriod').addEventListener('change', updateRecap);
     $('sendPerson').addEventListener('change', updateRecap);
     $('btnMakePdf').addEventListener('click', sendPdf);
-    $('btnOpenMail').addEventListener('click', function () {
-      var sel = selection();
-      if (!sel.length) return;
-      openMail(mailBody({ sel: sel, pers: $('sendPerson').value === 'ALLA' ? 'Alla förare' : $('sendPerson').value }));
-    });
+
     $('btnCopyTsv').addEventListener('click', function () { copyText(tsv(), 'Rader kopierade – klistra in i Excel'); });
     $('btnPreviewPdf').addEventListener('click', function () {
       var r = buildPdfBlob(); if (!r) return;

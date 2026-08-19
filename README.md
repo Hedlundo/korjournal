@@ -74,15 +74,13 @@ inte i ersättningen.
 
 ## Skicka in
 
-**Bifoga PDF i mejl** bygger en A4-PDF (liggande) för vald period och förare och öppnar
-telefonens delningsruta. Välj mejlappen så följer PDF:en med som bilaga. Adress och ämne får
-skrivas i mejlet – vissa mejlappar sätter ämnet till filnamnet, men det går inte att lita på.
-
-**Öppna mejl med adress och ämne** öppnar i stället ett tomt mejl till mottagaren med ämnet
-KÖRJOURNAL och sammanställningen i brödtexten – utan bilaga.
+**Skicka in körjournal** bygger en A4-PDF (liggande) för vald period och förare och öppnar
+telefonens delningsruta. Välj mejlappen så följer rapporten med som bilaga; adress och ämne
+skrivs i mejlet.
 
 Att få både mottagare och bilaga automatiskt ifyllt går inte från en webbapp: delningsrutan kan
-bifoga men inte adressera, och `mailto:` kan adressera men inte bifoga. Därför finns båda vägarna.
+bifoga men inte adressera, och `mailto:` kan adressera men inte bifoga. Rapporten väger tyngst,
+så appen tar den vägen. Vill man ha allt automatiskt är servern nedan svaret.
 
 **Avsändaren blir alltid det mejlkonto som är inloggat i telefonen** – George skickar från sin
 adress, Ebba från sin. En gemensam avsändaradress skulle kräva en server som skickar mejlet.
