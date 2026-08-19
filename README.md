@@ -106,9 +106,9 @@ datan försvinner om du rensar webbläsardata, avinstallerar appen eller byter t
 
 Tre skydd finns:
 
-1. **Säkerhetskopia** – Inställningar → *Exportera säkerhetskopia (JSON)*. Filen innehåller alla
+1. **Säkerhetskopia** – Admin → *Exportera säkerhetskopia (JSON)*. Filen innehåller alla
    resor och inställningar och läses tillbaka med *Importera säkerhetskopia*, även på en annan
-   telefon. Datumet för senaste kopian visas i Inställningar, med varning när det tillkommit
+   telefon. Datumet för senaste kopian visas i adminpanelen, med varning när det tillkommit
    resor sedan dess.
 2. **De inskickade PDF:erna** är i praktiken ett arkiv – varje utskick innehåller alla rader för
    perioden och ligger kvar i affärssystemets inkorg.
@@ -133,7 +133,7 @@ Listikonen uppe till vänster öppnar adminpanelen med två delar:
 
 **Dieselpris med historik.** Varje pris gäller från sitt datum tills ett nytt läggs in. Resor som
 redan är körda behåller det pris som gällde då – ändrar du priset idag räknas gamla resor inte
-om. Priset går också att ändra i Inställningar, vilket lägger in det med dagens datum.
+om.
 
 **Hela loggen.** Alla resor i en tabell med datum, tid, förare, bil, kund, ordernummer, adresser,
 km, milersättning, dieselpris, liter, bränslekostnad, trängselskatt och status (påbörjad,
