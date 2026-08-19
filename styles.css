@@ -294,6 +294,10 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
 }
 .km-out b{font-size:30px;color:var(--yellow);font-weight:800;margin-right:4px;font-variant-numeric:tabular-nums}
 .km-out.bad{background:var(--danger)}
+.km-out.small{padding:10px 14px;font-size:14px;margin-top:10px}
+.km-out.small b{font-size:22px}
+.chip.pass{background:var(--yellow);border-color:var(--yellow-dk);font-weight:700}
+.chip.pass::after{content:' ×';color:var(--ink-2)}
 .km-out.bad b{color:#fff}
 
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}

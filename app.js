@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.4.0';
+  var VER = '3.5.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -183,11 +183,12 @@
     el.innerHTML = arr.map(function (v) { return '<option value="' + v.replace(/"/g, '&quot;') + '">'; }).join('');
   }
   function chipRow(el, arr, onPick) {
+    arr = arr || [];
     el.innerHTML = '';
     arr.forEach(function (v) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'chip'; b.textContent = v;
-      b.addEventListener('click', function (e) { e.preventDefault(); onPick(v); });
+      b.addEventListener('click', function (e) { e.preventDefault(); onPick(v, arr.indexOf(v)); });
       el.appendChild(b);
     });
   }
@@ -295,7 +296,11 @@
     $('fTidStart').value = t.tidStart || (id ? '' : nowHM());
     $('fTidStopp').value = t.tidStopp || '';
     $('fOrdernr').value = t.ordernr || '';
-    $('fTrangsel').value = t.trangsel || '';
+    $('fKontakt').value = t.kontakt || '';
+    $('fTrangselBelopp').value = '';
+    setPassager(t.trangselPassager && t.trangselPassager.length
+      ? t.trangselPassager.slice()
+      : (numOf(t.trangsel) ? [numOf(t.trangsel)] : []));
 
     var person = DRIVERS.indexOf(t.person) >= 0 ? t.person : settings.person;
     var bil = carNames().indexOf(t.bil) >= 0 ? t.bil : settings.bil;
@@ -316,6 +321,8 @@
 
     chipRow($('kundChips'), freqList('kund', 4), function (v) { $('fKund').value = v; });
     chipRow($('syfteChips'), freqList('syfte', 4), function (v) { $('fSyfte').value = v; });
+    fillDatalist($('dlKontakt'), freqList('kontakt'));
+    chipRow($('kontaktChips'), freqList('kontakt', 4), function (v) { $('fKontakt').value = v; });
     fillDatalist($('dlOrder'), freqList('ordernr'));
     chipRow($('orderChips'), freqList('ordernr', 4), function (v) { $('fOrdernr').value = v; });
     var adr = addressList(4);
@@ -459,6 +466,28 @@
       });
   }
 
+  /* varje passage läggs till för sig, summan räknas fram av appen */
+  function passager() {
+    try { return JSON.parse($('sheetTrip').dataset.passager || '[]'); } catch (e) { return []; }
+  }
+  function setPassager(list) {
+    $('sheetTrip').dataset.passager = JSON.stringify(list);
+    var sum = list.reduce(function (a, b) { return a + numOf(b); }, 0);
+    $('fTrangsel').value = sum || '';
+    $('trangselSum').innerHTML = '<b>' + dec(sum, 2) + '</b> kr' +
+      (list.length ? ' · ' + list.length + (list.length === 1 ? ' passage' : ' passager') : '');
+    chipRow($('trangselList'), list.map(function (v) { return dec(v, 2) + ' kr'; }), function (v, i) {
+      var kvar = passager(); kvar.splice(i, 1); setPassager(kvar);
+    });
+    Array.prototype.forEach.call($('trangselList').children, function (c) { c.classList.add('pass'); });
+  }
+  function addPassage() {
+    var v = numOf($('fTrangselBelopp').value);
+    if (!v) { toast('Skriv beloppet för passagen först'); $('fTrangselBelopp').focus(); return; }
+    var list = passager(); list.push(v); setPassager(list);
+    $('fTrangselBelopp').value = '';
+  }
+
   function calcKm() {
     var a = intOf($('fMatStart').value), b = intOf($('fMatStopp').value);
     var out = $('kmOut'), hint = $('kmHint');
@@ -488,7 +517,9 @@
       adressStopp: up($('fAdrStopp').value),
       matStart: intOf($('fMatStart').value),
       matStopp: intOf($('fMatStopp').value),
+      kontakt: up($('fKontakt').value),
       trangsel: numOf($('fTrangsel').value) || '',
+      trangselPassager: passager(),
       tidStart: $('fTidStart').value || '',
       tidStopp: $('fTidStopp').value || '',
       ordernr: up($('fOrdernr').value),
@@ -817,7 +848,7 @@
   function pdfRows(sel) {
     return sel.map(function (t) {
       return {
-        kund: t.kund, syfte: t.syfte, verksamhet: t.verksamhet,
+        kund: t.kund, kontakt: t.kontakt || '', syfte: t.syfte, verksamhet: t.verksamhet,
         datum: yymmdd(t.datum),
         matStart: String(t.matStart || ''), matStopp: String(t.matStopp || ''),
         km: String(numOf(t.km)),
@@ -908,12 +939,12 @@
   }
 
   function tsv() {
-    var head = ['KUND', 'SYFTE', 'ORDERNR', 'VERKSAMHET', 'DATUM', 'TID', 'MÄTARSTÄLLNING START',
+    var head = ['KUND', 'KONTAKT', 'SYFTE', 'ORDERNR', 'VERKSAMHET', 'DATUM', 'TID', 'MÄTARSTÄLLNING START',
                 'MÄTARSTÄLLNING STOPP', 'KM', 'ADRESS START', 'ADRESS STOPP', 'TRÄNGSELSKATT',
                 'BRÄNSLE CA', 'PERSON', 'REGNR'];
     var lines = [head.join('\t')];
     pdfRows(selection()).forEach(function (r) {
-      lines.push([r.kund, r.syfte, r.ordernr, r.verksamhet, r.datum, r.tid, r.matStart, r.matStopp, r.km,
+      lines.push([r.kund, r.kontakt, r.syfte, r.ordernr, r.verksamhet, r.datum, r.tid, r.matStart, r.matStopp, r.km,
                   r.adressStart, r.adressStopp, r.trangsel, r.bransle, r.person, r.regnr].join('\t'));
     });
     return lines.join('\n');
@@ -965,7 +996,7 @@
     var q = up($('adminSok').value).toLowerCase();
     return sortedTrips().filter(function (t) {
       if (!q) return true;
-      return [t.kund, t.syfte, t.ordernr, t.adressStart, t.adressStopp, t.person, t.regnr, t.datum]
+      return [t.kund, t.kontakt, t.syfte, t.ordernr, t.adressStart, t.adressStopp, t.person, t.regnr, t.datum]
         .join(' ').toLowerCase().indexOf(q) >= 0;
     });
   }
@@ -977,6 +1008,7 @@
     { t: 'Bil', v: function (t) { return t.bil || ''; } },
     { t: 'Regnr', v: function (t) { return t.regnr || ''; } },
     { t: 'Kund', v: function (t) { return t.kund || ''; } },
+    { t: 'Kontakt', v: function (t) { return t.kontakt || ''; } },
     { t: 'Ordernr', v: function (t) { return t.ordernr || ''; } },
     { t: 'Från', v: function (t) { return t.adressStart || ''; } },
     { t: 'Till', v: function (t) { return t.adressStopp || ''; } },
@@ -1186,6 +1218,10 @@
     $('fAdrStart').addEventListener('input', function () { delete $('sheetTrip').dataset.startLat; });
     $('fAdrStopp').addEventListener('input', function () { delete $('sheetTrip').dataset.stopLat; });
 
+    $('btnAddTrangsel').addEventListener('click', function (e) { e.preventDefault(); addPassage(); });
+    $('fTrangselBelopp').addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); addPassage(); }
+    });
     $('nowStart').addEventListener('click', function (e) { e.preventDefault(); $('fTidStart').value = nowHM(); });
     $('nowStopp').addEventListener('click', function (e) { e.preventDefault(); $('fTidStopp').value = nowHM(); });
     $('fMatStart').addEventListener('input', calcKm);

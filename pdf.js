@@ -141,16 +141,17 @@
   /* ---------- körjournal ---------- */
   var COLS = [
     { k: 'kund',        t: 'KUND',              w: 88 },
-    { k: 'syfte',       t: 'SYFTE',             w: 96 },
-    { k: 'ordernr',     t: 'ORDERNR',           w: 44 },
-    { k: 'verksamhet',  t: 'VERKSAMHET',        w: 58 },
+    { k: 'kontakt',     t: 'KONTAKT',           w: 62 },
+    { k: 'syfte',       t: 'SYFTE',             w: 84 },
+    { k: 'ordernr',     t: 'ORDERNR',           w: 48 },
+    { k: 'verksamhet',  t: 'VERKSAMHET',        w: 62 },
     { k: 'datum',       t: 'DATUM',             w: 42, a: 'r' },
     { k: 'tid',         t: 'TID',               w: 48 },
     { k: 'matStart',    t: 'MÄTARE START',      w: 48, a: 'r' },
     { k: 'matStopp',    t: 'MÄTARE STOPP',      w: 48, a: 'r' },
     { k: 'km',          t: 'KM',                w: 32, a: 'r' },
-    { k: 'adressStart', t: 'ADRESS START',      w: 98 },
-    { k: 'adressStopp', t: 'ADRESS STOPP',      w: 98 },
+    { k: 'adressStart', t: 'ADRESS START',      w: 92 },
+    { k: 'adressStopp', t: 'ADRESS STOPP',      w: 92 },
     { k: 'trangsel',    t: 'TRÄNGSEL SKATT',    w: 52, a: 'r' },
     { k: 'bransle',     t: 'BRÄNSLE CA',        w: 48, a: 'r' },
     { k: 'person',      t: 'PERSON',            w: 68 },
@@ -184,9 +185,15 @@
       y = PH - 46 - 12;
       if (withTable === false) return;
       // rubrikrad – etiketter bryts på upp till två rader
-      var hl = [], maxL = 1, c;
+      var hl = [], hfs = [], maxL = 1, c;
       for (c = 0; c < COLS.length; c++) {
-        var ls = wrap(COLS[c].t, w[c] - 2 * PAD, HFS, true).slice(0, 2);
+        var bredd = w[c] - 2 * PAD, storlek = HFS;
+        var langst = COLS[c].t.split(' ').reduce(function (a, o) {
+          return textW(o, 1, true) > textW(a, 1, true) ? o : a;
+        }, '');
+        while (storlek > 4.5 && textW(langst, storlek, true) > bredd) storlek -= 0.2;
+        hfs.push(storlek);
+        var ls = wrap(COLS[c].t, bredd, storlek, true).slice(0, 2);
         hl.push(ls);
         if (ls.length > maxL) maxL = ls.length;
       }
@@ -196,7 +203,7 @@
         var tx = COLS[c].a === 'r' ? xs[c] + w[c] - PAD : xs[c] + PAD;
         var top = y - hh + (hh - hl[c].length * 7.6) / 2 + hl[c].length * 7.6 - 6.2;
         for (var hi = 0; hi < hl[c].length; hi++) {
-          page.text(hl[c][hi], tx, top - hi * 7.6, HFS, true, COLS[c].a || 'l', w[c] - 2 * PAD);
+          page.text(hl[c][hi], tx, top - hi * 7.6, hfs[c], true, COLS[c].a || 'l', w[c] - 2 * PAD);
         }
       }
       y -= hh;

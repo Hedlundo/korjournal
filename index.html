@@ -180,6 +180,13 @@
     </label>
 
     <label class="field">
+      <span class="lbl">Person hos kund <em>valfritt</em></span>
+      <input id="fKontakt" class="inp" list="dlKontakt" autocomplete="off" placeholder="t.ex. Anna Svensson">
+      <datalist id="dlKontakt"></datalist>
+      <div class="chips" id="kontaktChips"></div>
+    </label>
+
+    <label class="field">
       <span class="lbl">Syfte <em>ärende</em></span>
       <input id="fSyfte" class="inp" list="dlSyfte" autocomplete="off" placeholder="t.ex. LEVERANS FILTER">
       <datalist id="dlSyfte"></datalist>
@@ -203,10 +210,16 @@
     <section class="step">
       <h3><span class="num">4</span> Kostnader <em>valfritt</em></h3>
 
-    <label class="field">
-      <span class="lbl">Trängselskatt</span>
-      <input id="fTrangsel" class="inp num" inputmode="decimal" placeholder="0 kr">
-    </label>
+    <div class="field">
+      <span class="lbl">Trängselskatt <em>en rad per passage</em></span>
+      <div class="two">
+        <span class="rate"><input id="fTrangselBelopp" class="inp num" inputmode="decimal" placeholder="0"><i>kr</i></span>
+        <button type="button" id="btnAddTrangsel" class="btn btn-tull">+ Passage</button>
+      </div>
+      <div class="chips" id="trangselList"></div>
+      <div class="km-out small" id="trangselSum"><b>0</b> kr</div>
+      <input id="fTrangsel" type="hidden">
+    </div>
     </section>
 
     <button id="btnSave" class="btn btn-primary btn-block">Spara resa</button>

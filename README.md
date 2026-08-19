@@ -5,8 +5,12 @@ Ingen server, ingen inloggning – all data ligger i telefonen (localStorage).
 
 ## Fält per resa
 
-KUND · SYFTE · ORDERNR · VERKSAMHET · DATUM · TID · MÄTARSTÄLLNING START ·
+KUND · KONTAKT · SYFTE · ORDERNR · VERKSAMHET · DATUM · TID · MÄTARSTÄLLNING START ·
 MÄTARSTÄLLNING STOPP · KM · ADRESS START · ADRESS STOPP · TRÄNGSELSKATT · PERSON · REGNR
+
+**Trängselskatten läggs in en passage i taget.** Skriv beloppet, tryck *+ Passage*, upprepa.
+Varje passage blir en gul bricka som går att ta bort med ett tryck, och appen summerar dem åt
+dig. Summan är det som hamnar i journalen.
 
 Klockslaget vid start fylls i automatiskt när du öppnar en ny resa, och tiden framme sätts när
 du sparar den avslutad. Båda går att ändra.
