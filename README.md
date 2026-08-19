@@ -74,10 +74,19 @@ inte i ersättningen.
 
 ## Skicka in
 
-**Skicka in → Skapa PDF och öppna mejl** bygger en A4-PDF (liggande) för vald period och förare
-och öppnar telefonens delningsruta. Välj Outlook/Gmail så följer PDF:en med som bilaga.
-Kan telefonen inte dela filer laddas PDF:en ner och mejlet öppnas med mottagaren förifylld –
-då bifogas filen manuellt.
+**Skapa PDF och öppna mejl** bygger en A4-PDF (liggande) för vald period och förare och öppnar
+telefonens delningsruta. Välj Outlook/Gmail så följer PDF:en med som bilaga. Filen heter
+`KORJOURNAL <period> <förare>.pdf`, vilket flera mejlappar använder som ämnesrad, och
+mottagaradressen står först i brödtexten.
+
+**Öppna mejl med adress och ämne ifyllt** öppnar i stället ett tomt mejl till mottagaren med
+ämnet KÖRJOURNAL och sammanställningen i brödtexten – utan bilaga.
+
+Att få både mottagare och bilaga automatiskt ifyllt går inte från en webbapp: delningsrutan kan
+bifoga men inte adressera, och `mailto:` kan adressera men inte bifoga. Därför finns båda vägarna.
+
+**Avsändaren blir alltid det mejlkonto som är inloggat i telefonen** – George skickar från sin
+adress, Ebba från sin. En gemensam avsändaradress skulle kräva en server som skickar mejlet.
 
 Extra: **Kopiera rader för Excel** lägger raderna på urklipp (tabbseparerat) för inklistring
 i det gamla arket.

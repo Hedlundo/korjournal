@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.8.0';
+  var VER = '3.9.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -872,9 +872,10 @@
     if (!sel.length) return null;
     var pers = $('sendPerson').value === 'ALLA' ? 'Alla förare' : $('sendPerson').value;
     var regs = {}; sel.forEach(function (t) { if (t.bil) regs[t.bil + ' ' + regnrFor(t.bil)] = 1; });
-    var fname = 'Korjournal_' +
-      ($('sendPeriod').value === 'ALLA' ? 'alla' : $('sendPeriod').value) + '_' +
-      (pers.replace(/[^A-Za-z0-9ÅÄÖåäö]+/g, '-') || 'forare') + '.pdf';
+    var per = $('sendPeriod').value;
+    var fname = 'KORJOURNAL ' +
+      (per === 'ALLA' ? 'alla resor' : per === 'EJ' ? todayISO() : per) + ' ' +
+      (pers.replace(/[^A-Za-z0-9ÅÄÖåäö ]+/g, '') || 'forare') + '.pdf';
     var bytes = KJPdf.build(pdfRows(sel), {
       subtitle: pers + '  ·  ' + Object.keys(regs).join(', ') + '  ·  ' + periodLabel(),
       foretag: settings.foretag || '',
@@ -894,7 +895,8 @@
       if (l.note) { sum += l.note + '\n'; return; }
       sum += l.label + ': ' + l.value + '\n';
     });
-    return 'Hej,\n\nHär kommer körjournal för ' + periodLabel().toLowerCase() + '.\n' +
+    return 'Till: ' + (settings.mail || DEFAULT_MAIL) + '\n\n' +
+           'Hej,\n\nHär kommer körjournal för ' + periodLabel().toLowerCase() + '.\n' +
            'Förare: ' + r.pers + '\n' +
            'Antal resor: ' + r.sel.length + '\n' +
            'Körsträcka: ' + km + ' km\n\n' +
@@ -905,7 +907,7 @@
   function sendPdf() {
     var r = buildPdfBlob();
     if (!r) return;
-    var subject = 'Körjournal ' + periodLabel() + ' – ' + r.pers;
+    var subject = 'KÖRJOURNAL';
     var body = mailBody(r);
 
     var file = null;
@@ -923,14 +925,19 @@
     }
   }
 
+  /* öppnar mejlappen med mottagare och ämne redan ifyllda */
+  function openMail(bodyText) {
+    window.location.href = 'mailto:' + encodeURIComponent(settings.mail || DEFAULT_MAIL) +
+      '?subject=' + encodeURIComponent('KÖRJOURNAL') +
+      '&body=' + encodeURIComponent(bodyText || '');
+  }
+
   function fallback(r, subject, body) {
     downloadBlob(r.blob, r.name);
     markSent(r.sel);
     toast('PDF sparad – bifoga den i mejlet', 4000);
     setTimeout(function () {
-      window.location.href = 'mailto:' + encodeURIComponent(settings.mail || '') +
-        '?subject=' + encodeURIComponent(subject) +
-        '&body=' + encodeURIComponent(body + '\n(Bifoga filen ' + r.name + ' från Nedladdningar.)');
+      openMail(body + '\n(Bifoga filen ' + r.name + ' från Nedladdningar.)');
     }, 900);
   }
 
@@ -1246,7 +1253,11 @@
     $('sendPeriod').addEventListener('change', updateRecap);
     $('sendPerson').addEventListener('change', updateRecap);
     $('btnMakePdf').addEventListener('click', sendPdf);
-    $('btnCopyMail').addEventListener('click', function () { copyText(settings.mail || '', 'Adress kopierad'); });
+    $('btnOpenMail').addEventListener('click', function () {
+      var sel = selection();
+      if (!sel.length) return;
+      openMail(mailBody({ sel: sel, pers: $('sendPerson').value === 'ALLA' ? 'Alla förare' : $('sendPerson').value }));
+    });
     $('btnCopyTsv').addEventListener('click', function () { copyText(tsv(), 'Rader kopierade – klistra in i Excel'); });
     $('btnPreviewPdf').addEventListener('click', function () {
       var r = buildPdfBlob(); if (!r) return;
