@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.1.0';
+  var VER = '4.2.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -884,7 +884,8 @@
     var pers = $('sendPerson').value === 'ALLA' ? 'Alla förare' : $('sendPerson').value;
     var regs = {}; sel.forEach(function (t) { if (t.bil) regs[t.bil + ' ' + regnrFor(t.bil)] = 1; });
     var per = $('sendPeriod').value;
-    var fname = 'KORJOURNAL ' +
+    /* filnamnet blir ämnesrad i Mail på iPhone – därför leder KÖRJOURNAL */
+    var fname = 'KÖRJOURNAL ' +
       (per === 'ALLA' ? 'alla resor' : per === 'EJ' ? todayISO() : per) + ' ' +
       (pers.replace(/[^A-Za-z0-9ÅÄÖåäö ]+/g, '') || 'forare') + '.pdf';
     var bytes = KJPdf.build(pdfRows(sel), {
