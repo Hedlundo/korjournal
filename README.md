@@ -74,13 +74,12 @@ inte i ersättningen.
 
 ## Skicka in
 
-**Skapa PDF och öppna mejl** bygger en A4-PDF (liggande) för vald period och förare och öppnar
-telefonens delningsruta. Välj Outlook/Gmail så följer PDF:en med som bilaga. Filen heter
-`KORJOURNAL <period> <förare>.pdf`, vilket flera mejlappar använder som ämnesrad, och
-mottagaradressen står först i brödtexten.
+**Bifoga PDF i mejl** bygger en A4-PDF (liggande) för vald period och förare och öppnar
+telefonens delningsruta. Välj mejlappen så följer PDF:en med som bilaga. Adress och ämne får
+skrivas i mejlet – vissa mejlappar sätter ämnet till filnamnet, men det går inte att lita på.
 
-**Öppna mejl med adress och ämne ifyllt** öppnar i stället ett tomt mejl till mottagaren med
-ämnet KÖRJOURNAL och sammanställningen i brödtexten – utan bilaga.
+**Öppna mejl med adress och ämne** öppnar i stället ett tomt mejl till mottagaren med ämnet
+KÖRJOURNAL och sammanställningen i brödtexten – utan bilaga.
 
 Att få både mottagare och bilaga automatiskt ifyllt går inte från en webbapp: delningsrutan kan
 bifoga men inte adressera, och `mailto:` kan adressera men inte bifoga. Därför finns båda vägarna.
