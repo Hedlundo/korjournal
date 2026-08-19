@@ -73,6 +73,7 @@ button{font:inherit;color:inherit}
   font-size:20px;font-weight:800;
 }
 .summary .pay span{font-size:13px;font-weight:600;color:#c9ccd2;margin-left:8px}
+.summary .send-top{width:100%;margin-top:14px;min-height:52px}
 
 .month-head{
   display:flex;justify-content:space-between;align-items:baseline;
@@ -185,7 +186,7 @@ button{font:inherit;color:inherit}
 /* ---------- actionbar ---------- */
 .actionbar{
   position:fixed;left:0;right:0;bottom:0;z-index:20;
-  display:flex;gap:10px;padding:10px 12px calc(10px + var(--safe-b));
+  display:flex;gap:10px;padding:10px 12px calc(14px + var(--safe-b));
   background:linear-gradient(to top,var(--bg) 70%,transparent);
 }
 .actionbar .btn{flex:1}

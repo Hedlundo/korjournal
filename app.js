@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.5.1';
+  var VER = '3.6.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -211,7 +211,9 @@
     $('summary').innerHTML =
       '<div class="big">' + km + '<span>km</span></div>' +
       '<div class="meta">' + MONTHS[+thisMonth.slice(5, 7) - 1] + ' · ' + cnt + ' resor</div>' +
-      (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '');
+      (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '') +
+      '<button type="button" id="summarySend" class="btn btn-primary send-top">Skicka in körjournal</button>';
+    $('summarySend').addEventListener('click', openSend);
 
     var html = '', curM = null;
     s.forEach(function (t) {
