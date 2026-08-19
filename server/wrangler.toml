@@ -5,7 +5,7 @@ compatibility_date = "2026-01-01"
 [vars]
 # Adressen körjournalen skickas TILL. Ligger här, inte i appen, så att
 # funktionen aldrig kan användas för att mejla någon annan.
-TO_EMAIL = "george@airstrategy.se"
+TO_EMAIL = "korjournal@airfilter.se"
 
 # Avsändare. Domänen airfilter.se måste vara verifierad hos Resend.
 FROM_EMAIL = "korjournal@airfilter.se"
