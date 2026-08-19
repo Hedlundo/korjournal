@@ -2,12 +2,13 @@
 (function () {
   'use strict';
 
-  var VER = '2.0.0';
+  var VER = '2.1.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
   var DAYS = ['sön', 'mån', 'tis', 'ons', 'tor', 'fre', 'lör'];
 
+  var TAB = String.fromCharCode(9), NL = String.fromCharCode(10);
   var $ = function (id) { return document.getElementById(id); };
   var trips = [], settings = {};
   var editId = null;
@@ -33,6 +34,14 @@
     delete settings.regs;
     if (!settings.regnr || carNames().indexOf(settings.regnr) === -1) settings.regnr = settings.cars[0].nr;
     if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
+    /* dieselpriset är en historik: varje pris gäller från sitt datum */
+    if (!settings.dieselHist || !settings.dieselHist.length) {
+      settings.dieselHist = settings.diesel ? [{ from: '2000-01-01', pris: numOf(settings.diesel) }] : [];
+    }
+    settings.dieselHist = settings.dieselHist
+      .filter(function (p) { return p && p.from && numOf(p.pris); })
+      .sort(function (a, b) { return a.from < b.from ? -1 : 1; });
+    saveSettings();   // så att migreringen ligger kvar
   }
   function carNames() {
     return (settings.cars || []).map(function (c) { return c.nr; }).filter(Boolean);
@@ -73,8 +82,14 @@
     var f = forbFor(t.regnr);
     return f ? Math.round(numOf(t.km) / 10 * f * 10) / 10 : 0;
   }
+  function prisAt(datum) {
+    var h = settings.dieselHist || [], vald = 0;
+    for (var i = 0; i < h.length; i++) if (h[i].from <= datum) vald = numOf(h[i].pris);
+    if (!vald && h.length) vald = numOf(h[0].pris);   // resor före första priset
+    return vald;
+  }
   function fuelFor(t) {
-    var l = literFor(t), p = numOf(settings.diesel);
+    var l = literFor(t), p = prisAt(t.datum || todayISO());
     return (l && p) ? Math.round(l * p * 100) / 100 : 0;
   }
   function dec(v, n) { return (Math.round(v * Math.pow(10, n)) / Math.pow(10, n)).toString().replace('.', ','); }
@@ -469,7 +484,7 @@
   }
   /* uppskattad dieselkostnad för resan som fylls i just nu */
   function showFuel(km) {
-    var nr = $('sheetTrip').dataset.regnr, f = forbFor(nr), p = numOf(settings.diesel);
+    var nr = $('sheetTrip').dataset.regnr, f = forbFor(nr), p = prisAt($('fDatum').value || todayISO());
     if (!km || !f || !p) { $('fuelOut').textContent = ''; return; }
     var liter = Math.round(km / 10 * f * 10) / 10;
     $('fuelOut').textContent = 'Bränsle ca ' + dec(liter, 1) + ' l · ' + kr(liter * p) + ' (' + nr + ')';
@@ -550,7 +565,7 @@
     $('sCar2').value = (c[1] && c[1].nr) || '';
     $('sMil2').value = (c[1] && c[1].mil) || '';
     $('sForb2').value = (c[1] && c[1].forb) || '';
-    $('sDiesel').value = settings.diesel || '';
+    $('sDiesel').value = prisAt(todayISO()) || '';
     renderDefaultCar(settings.regnr);
     $('sHome').value = settings.home || '';
     $('sVerk').value = settings.verk || '';
@@ -594,7 +609,9 @@
       { nr: c2, mil: numOf($('sMil2').value), forb: numOf($('sForb2').value) || '' }
     ].filter(function (c) { return !!c.nr; });
     if (!settings.cars.length) settings.cars = [{ nr: 'WXE84R', mil: 25, forb: '' }];
-    settings.diesel = numOf($('sDiesel').value) || '';
+    var nyttPris = numOf($('sDiesel').value);
+    if (nyttPris && nyttPris !== prisAt(todayISO())) addPris(todayISO(), nyttPris);
+    settings.diesel = nyttPris || '';
     var dc = $('sDefaultCar').dataset.value || '';
     settings.regnr = carNames().indexOf(dc) >= 0 ? dc : settings.cars[0].nr;
     settings.home = up($('sHome').value);
@@ -689,20 +706,32 @@
     lines.push({ label: 'Att ersätta', value: kr(totErs + utlagg), bold: true });
 
     /* bränsle – bokföring, ingen ersättning */
-    var pris = numOf(settings.diesel), fuelCars = order.filter(function (nr) { return forbFor(nr) > 0; });
-    if (pris && fuelCars.length) {
+    var perCar = {}, totL = 0, totKost = 0, prisSet = {};
+    sel.forEach(function (t) {
+      var l = literFor(t), k = fuelFor(t);
+      if (!l) return;
+      var nr = t.regnr || '—';
+      if (!perCar[nr]) perCar[nr] = { liter: 0, kost: 0 };
+      perCar[nr].liter += l; perCar[nr].kost += k;
+      totL += l; totKost += k;
+      prisSet[prisAt(t.datum)] = 1;
+    });
+    var fuelCars = Object.keys(perCar);
+    if (fuelCars.length) {
       lines.push({ head: 'Beräknad bränslekostnad (bokföring)' });
-      var totL = 0, totKost = 0;
       fuelCars.forEach(function (nr) {
-        var km = byCar[nr], f = forbFor(nr);
-        var liter = Math.round(km / 10 * f * 10) / 10, kost = Math.round(liter * pris * 100) / 100;
-        totL += liter; totKost += kost;
-        lines.push({ label: nr + ' - ' + dec(liter, 1) + ' l (' + dec(f, 2) + ' l/mil)', value: kr(kost) });
+        lines.push({
+          label: nr + ' - ' + dec(perCar[nr].liter, 1) + ' l (' + dec(forbFor(nr), 2) + ' l/mil)',
+          value: kr(perCar[nr].kost)
+        });
       });
       if (fuelCars.length > 1) {
         lines.push({ label: 'Summa bränsle ' + dec(totL, 1) + ' l', value: kr(totKost), sub: true });
       }
-      lines.push({ note: 'Uppskattning på ' + kr(pris) + '/liter diesel. Ingår inte i ersättningen.' });
+      var priser = Object.keys(prisSet);
+      lines.push({ note: priser.length === 1
+        ? 'Uppskattning på ' + kr(numOf(priser[0])) + '/liter diesel. Ingår inte i ersättningen.'
+        : 'Uppskattning på dieselpriset som gällde vid varje resa. Ingår inte i ersättningen.' });
     }
     return lines;
   }
@@ -851,6 +880,106 @@
     ta.remove();
   }
 
+  /* ---------------- adminpanel ----------------
+     Prishistorik och en fullständig logg över alla resor med kostnader. */
+  function addPris(from, pris) {
+    settings.dieselHist = (settings.dieselHist || []).filter(function (p) { return p.from !== from; });
+    settings.dieselHist.push({ from: from, pris: numOf(pris) });
+    settings.dieselHist.sort(function (a, b) { return a.from < b.from ? -1 : 1; });
+    saveSettings();
+  }
+
+  function renderPris() {
+    var h = settings.dieselHist || [], el = $('prisList');
+    if (!h.length) { el.innerHTML = '<div class="hint">Inget dieselpris inlagt ännu.</div>'; return; }
+    el.innerHTML = h.slice().reverse().map(function (p, i) {
+      var galler = i === 0 ? 'gäller nu' : 'till ' + h[h.length - i].from;
+      return '<div class="pris-row"><div><b>' + kr(p.pris) + '/l</b>' +
+             '<span>från ' + p.from + ' · ' + galler + '</span></div>' +
+             '<button type="button" data-pris="' + p.from + '">Ta bort</button></div>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        var d = b.getAttribute('data-pris');
+        settings.dieselHist = settings.dieselHist.filter(function (p) { return p.from !== d; });
+        saveSettings(); renderPris(); renderAdmin(); render();
+        toast('Priset borttaget');
+      });
+    });
+  }
+
+  /* alla resor, nyast först, filtrerade på fritext */
+  function adminRows() {
+    var q = up($('adminSok').value).toLowerCase();
+    return sortedTrips().filter(function (t) {
+      if (!q) return true;
+      return [t.kund, t.syfte, t.ordernr, t.adressStart, t.adressStopp, t.person, t.regnr, t.datum]
+        .join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  var ADMIN_COLS = [
+    { t: 'Datum', v: function (t) { return t.datum; } },
+    { t: 'Tid', v: function (t) { return (t.tidStart || '') + (t.tidStopp ? '-' + t.tidStopp : ''); } },
+    { t: 'Förare', v: function (t) { return t.person || ''; } },
+    { t: 'Bil', v: function (t) { return t.regnr || ''; } },
+    { t: 'Kund', v: function (t) { return t.kund || ''; } },
+    { t: 'Ordernr', v: function (t) { return t.ordernr || ''; } },
+    { t: 'Från', v: function (t) { return t.adressStart || ''; } },
+    { t: 'Till', v: function (t) { return t.adressStopp || ''; } },
+    { t: 'Km', v: function (t) { return numOf(t.km) || ''; }, n: 1 },
+    { t: 'Milersättning', v: function (t) { return ersFor(t) ? dec(ersFor(t), 2) : ''; }, n: 1 },
+    { t: 'Diesel kr/l', v: function (t) { return prisAt(t.datum) ? dec(prisAt(t.datum), 2) : ''; }, n: 1 },
+    { t: 'Liter', v: function (t) { return literFor(t) ? dec(literFor(t), 1) : ''; }, n: 1 },
+    { t: 'Bränsle', v: function (t) { return fuelFor(t) ? dec(fuelFor(t), 2) : ''; }, n: 1 },
+    { t: 'Trängselskatt', v: function (t) { return numOf(t.trangsel) ? dec(numOf(t.trangsel), 2) : ''; }, n: 1 },
+    { t: 'Status', v: function (t) { return isOpen(t) ? 'Påbörjad' : t.sentAt ? 'Inskickad ' + t.sentAt : 'Ej inskickad'; } }
+  ];
+
+  function renderAdmin() {
+    var rows = adminRows();
+    var km = 0, ers = 0, bransle = 0, tr = 0, liter = 0, oppna = 0;
+    rows.forEach(function (t) {
+      km += numOf(t.km); ers += ersFor(t); bransle += fuelFor(t);
+      tr += numOf(t.trangsel); liter += literFor(t); if (isOpen(t)) oppna++;
+    });
+    $('adminSum').innerHTML =
+      '<div class="row"><span>Resor</span><b>' + rows.length + (oppna ? ' (' + oppna + ' påbörjade)' : '') + '</b></div>' +
+      '<div class="row"><span>Körsträcka</span><b>' + km + ' km</b></div>' +
+      '<div class="row"><span>Milersättning</span><b>' + kr(ers) + '</b></div>' +
+      '<div class="row"><span>Trängselskatt</span><b>' + kr(tr) + '</b></div>' +
+      '<div class="row total"><span>Bränsle ca ' + dec(liter, 1) + ' l</span><b>' + kr(bransle) + '</b></div>';
+
+    var html = '<thead><tr>' + ADMIN_COLS.map(function (c) {
+      return '<th' + (c.n ? ' class="n"' : '') + '>' + c.t + '</th>';
+    }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function (t) {
+      html += '<tr data-id="' + t.id + '">' + ADMIN_COLS.map(function (c) {
+        return '<td' + (c.n ? ' class="n"' : '') + '>' + esc(c.v(t)) + '</td>';
+      }).join('') + '</tr>';
+    });
+    $('adminTabell').innerHTML = html + '</tbody>';
+    Array.prototype.forEach.call($('adminTabell').querySelectorAll('tr[data-id]'), function (tr2) {
+      tr2.addEventListener('click', function () { openTrip(tr2.getAttribute('data-id')); });
+    });
+  }
+
+  function adminTsv() {
+    var lines = [ADMIN_COLS.map(function (c) { return c.t; }).join(TAB)];
+    adminRows().forEach(function (t) {
+      lines.push(ADMIN_COLS.map(function (c) { return c.v(t); }).join(TAB));
+    });
+    return lines.join(NL);
+  }
+
+  function openAdmin() {
+    $('prisDatum').value = todayISO();
+    $('prisVarde').value = '';
+    renderPris();
+    renderAdmin();
+    open($('sheetAdmin'));
+  }
+
   /* ---------------- statistik ----------------
      Grupperar avslutade resor och visar km, bränsle och ersättning. */
   var STAT_KEYS = [
@@ -951,6 +1080,17 @@
     $('btnSend').addEventListener('click', openSend);
     $('btnSettings').addEventListener('click', openSettings);
     $('btnStats').addEventListener('click', openStats);
+    $('btnAdmin').addEventListener('click', openAdmin);
+    $('adminSok').addEventListener('input', renderAdmin);
+    $('btnAdminTsv').addEventListener('click', function () { copyText(adminTsv(), 'Loggen kopierad'); });
+    $('btnAddPris').addEventListener('click', function () {
+      var d = $('prisDatum').value, p = numOf($('prisVarde').value);
+      if (!d || !p) { toast('Fyll i datum och pris'); return; }
+      addPris(d, p);
+      $('prisVarde').value = '';
+      renderPris(); renderAdmin(); render();
+      toast('Dieselpris ' + kr(p) + '/l från ' + d);
+    });
     $('statCar').addEventListener('change', function () { statCar = this.value; renderStats(); });
     $('btnCopyStats').addEventListener('click', function () { copyText(statsTsv(), 'Tabellen kopierad'); });
 

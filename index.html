@@ -25,6 +25,9 @@
     <span class="brand-txt"><i>AIRFILTER GROUP</i><b>KÖRJOURNAL</b></span>
   </div>
   <div class="topbtns">
+  <button id="btnAdmin" class="icon-btn" aria-label="Adminpanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 4h18v3H3V4Zm0 5h18v2H3V9Zm0 4h18v2H3v-2Zm0 4h18v3H3v-3Z"/></svg>
+  </button>
   <button id="btnStats" class="icon-btn" aria-label="Statistik">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 20h16v2H2V2h2v18Zm3-3V9h3v8H7Zm5 0V4h3v13h-3Zm5 0v-6h3v6h-3Z"/></svg>
   </button>
@@ -319,6 +322,37 @@
     </div>
     <div id="statOut"></div>
     <button id="btnCopyStats" class="btn btn-ghost btn-block">Kopiera tabellen för Excel</button>
+  </div>
+</section>
+
+<!-- ===================== ADMIN ===================== -->
+<section id="sheetAdmin" class="sheet" hidden>
+  <div class="sheet-head">
+    <button class="link-btn" data-close>Stäng</button>
+    <h2>Adminpanel</h2>
+    <span class="link-btn ghost"></span>
+  </div>
+  <div class="sheet-body">
+
+    <section class="step">
+      <h3><span class="num">1</span> Dieselpris</h3>
+      <div class="hint">Priset gäller för alla resor från och med datumet, tills du lägger in ett nytt. Äldre resor behåller sitt pris.</div>
+      <div id="prisList" class="pris-list"></div>
+      <div class="two">
+        <input type="date" id="prisDatum" class="inp">
+        <span class="rate"><input id="prisVarde" class="inp num" inputmode="decimal" placeholder="20,50"><i>kr/l</i></span>
+      </div>
+      <button id="btnAddPris" class="btn btn-ghost btn-block">Lägg till pris</button>
+    </section>
+
+    <section class="step">
+      <h3><span class="num">2</span> Alla resor</h3>
+      <input id="adminSok" class="inp" placeholder="Sök kund, ordernr, adress, förare…" autocomplete="off">
+      <div id="adminSum" class="recap"></div>
+      <div class="table-wrap"><table id="adminTabell"></table></div>
+      <button id="btnAdminTsv" class="btn btn-ghost btn-block">Kopiera loggen för Excel</button>
+    </section>
+
   </div>
 </section>
 

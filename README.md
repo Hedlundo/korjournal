@@ -113,6 +113,20 @@ Varje resa får ett datum i `sentAt` när den följt med i ett utskick. Det syns
 I *Skicka in* ligger **Ej inskickade** överst i periodlistan och är förvald, så nästa utskick tar
 med precis det som saknas – inga dubletter, inget som glöms.
 
+## Adminpanel
+
+Listikonen uppe till vänster öppnar adminpanelen med två delar:
+
+**Dieselpris med historik.** Varje pris gäller från sitt datum tills ett nytt läggs in. Resor som
+redan är körda behåller det pris som gällde då – ändrar du priset idag räknas gamla resor inte
+om. Priset går också att ändra i Inställningar, vilket lägger in det med dagens datum.
+
+**Hela loggen.** Alla resor i en tabell med datum, tid, förare, bil, kund, ordernummer, adresser,
+km, milersättning, dieselpris, liter, bränslekostnad, trängselskatt och status (påbörjad,
+ej inskickad eller inskickad med datum). Fritextsökning på kund, ordernummer, adress eller
+förare, summering överst, och klick på en rad öppnar resan för redigering.
+*Kopiera loggen för Excel* lägger hela tabellen på urklipp.
+
 ## Statistik
 
 Diagramknappen uppe till höger grupperar avslutade resor per **dag, vecka, månad, kund,
