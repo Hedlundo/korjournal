@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.3.0';
+  var VER = '3.4.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -41,6 +41,7 @@
     if (DRIVERS.indexOf(settings.person) === -1) settings.person = DRIVERS[0];
     if (!carDef(settings.bil) || settings.bil !== carDef(settings.bil).namn) settings.bil = CARS[0].namn;
     if (!settings.mail) settings.mail = DEFAULT_MAIL;
+    if (settings.lock == null) settings.lock = true;   // låst från början
     if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
     /* äldre resor sparade bara regnr – knyt dem till rätt bil */
     trips.forEach(function (t) {
@@ -620,7 +621,7 @@
       toast('Låst med kod. Enheten stödjer inte Face ID.', 4500);
       return;
     }
-    toast('Låst. Godkänn med Face ID så slipper du koden.', 5000);
+    toast('Godkänn med Face ID…', 5000);
     lockCreate().then(function (id) {
       settings.lockId = id;
       saveSettings(); renderLockState();
@@ -631,17 +632,20 @@
     });
   }
   function disableLock() {
-    delete settings.lockId; delete settings.lock; delete settings.lockCode;
+    delete settings.lockId;
+    settings.lock = false;
     saveSettings(); renderLockState();
-    toast('Låset borttaget');
+    toast('Låset avstängt');
   }
-  function lockOn() { return !!(settings.lock || settings.lockId); }
+  function lockOn() { return settings.lock !== false; }
   function renderLockState() {
-    var pa = lockOn();
-    $('lockState').textContent = pa
-      ? (settings.lockId ? 'Låst med Face ID, med koden som reserv.' : 'Låst med kod. Face ID är inte registrerat på den här enheten.')
-      : 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.';
-    $('btnLockOn').hidden = pa;
+    var pa = lockOn(), bio = !!settings.lockId;
+    $('lockState').textContent = !pa
+      ? 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.'
+      : bio ? 'Låst med Face ID, med koden som reserv.'
+            : 'Låst med kod. Lägg till Face ID så slipper du knappa in den.';
+    $('btnLockOn').hidden = pa && bio;
+    $('btnLockOn').textContent = pa ? 'Lägg till Face ID' : 'Lås appen';
     $('btnLockOff').hidden = !pa;
   }
 

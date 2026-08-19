@@ -152,9 +152,9 @@ följa upp.
 
 ## Lås med Face ID
 
-Admin → *Lås appen* slår på låset direkt med koden i `LOCK_CODE` (`app.js`) och frågar därefter
-om Face ID. Svarar telefonen läggs biometrin till; annars står låset kvar med bara kod. Sedan
-möts du av en låsskärm varje gång appen startas.
+Låset är **på från början**. Appen frågar efter koden i `LOCK_CODE` (`app.js`) varje gång den
+startas. Admin → *Lägg till Face ID* registrerar telefonens biometri via WebAuthn, så slipper du
+knappa in koden – den finns kvar som reserv. *Ta bort låset* stänger av det helt.
 
 Koden ligger i klartext i källkoden. Repot är publikt, så vem som helst kan läsa den – vilket
 spelar mindre roll än det låter, eftersom ingen kommer åt din data via webbadressen ändå.
