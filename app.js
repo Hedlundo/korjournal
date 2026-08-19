@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.2.0';
+  var VER = '3.3.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -22,6 +22,7 @@
   ];
   var VERKSAMHETER = ['FILTER', 'MUSIK'];
   var DEFAULT_MAIL = 'info@airstrategy.se';
+  var LOCK_CODE = '1934';
 
   function carDef(namn) {
     for (var i = 0; i < CARS.length; i++) if (CARS[i].namn === namn) return CARS[i];
@@ -560,9 +561,6 @@
     for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
     return a;
   }
-  function sha(txt) {
-    return crypto.subtle.digest('SHA-256', new TextEncoder().encode('kj:' + txt)).then(b64);
-  }
   function bioSupported() {
     return !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
   }
@@ -575,7 +573,7 @@
         user: { id: rnd(16), name: settings.person || 'forare', displayName: settings.person || 'Förare' },
         pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
-        timeout: 60000
+        timeout: 30000
       }
     }).then(function (cred) { return b64(cred.rawId); });
   }
@@ -595,7 +593,9 @@
     document.body.style.overflow = 'hidden';
     $('lockCodeBox').hidden = true;
     $('lockBio').hidden = !settings.lockId;
-    $('lockMsg').textContent = 'Lås upp för att fortsätta';
+    $('lockCodeBox').hidden = !!settings.lockId;
+    $('lockUseCode').hidden = !settings.lockId;
+    $('lockMsg').textContent = settings.lockId ? 'Lås upp för att fortsätta' : 'Ange koden för att fortsätta';
     if (settings.lockId) setTimeout(tryBio, 300);
   }
   function hideLock() {
@@ -611,43 +611,37 @@
     });
   }
 
+  /* Låset slås på direkt med koden. Face ID läggs till efteråt om
+     telefonen svarar – annars står låset kvar med bara kod. */
   function enableLock() {
+    settings.lock = true;
+    saveSettings(); renderLockState();
     if (!bioSupported()) {
-      toast('Den här webbläsaren stödjer inte Face ID-lås', 4000);
+      toast('Låst med kod. Enheten stödjer inte Face ID.', 4500);
       return;
     }
-    var kod = up($('lockNewCode').value);
-    if (!/^[0-9]{4,8}$/.test(kod)) {
-      toast('Skriv en reservkod på 4–8 siffror först', 3500);
-      $('lockNewCode').focus();
-      return;
-    }
-    toast('Godkänn med Face ID…', 6000);
+    toast('Låst. Godkänn med Face ID så slipper du koden.', 5000);
     lockCreate().then(function (id) {
-      return sha(kod).then(function (h) {
-        settings.lockId = id; settings.lockCode = h;
-        saveSettings();
-        $('lockNewCode').value = '';
-        renderLockState();
-        toast('Låset är på – Face ID krävs nästa gång appen öppnas', 4000);
-      });
-    }).catch(function (err) {
-      toast('Telefonen skapade inget lås: ' + ((err && err.name) || 'okänt fel'), 5000);
+      settings.lockId = id;
+      saveSettings(); renderLockState();
+      toast('Face ID tillagt', 3000);
+    }).catch(function () {
+      renderLockState();
+      toast('Face ID lades inte till – koden gäller', 4500);
     });
   }
   function disableLock() {
-    delete settings.lockId; delete settings.lockCode;
+    delete settings.lockId; delete settings.lock; delete settings.lockCode;
     saveSettings(); renderLockState();
     toast('Låset borttaget');
   }
+  function lockOn() { return !!(settings.lock || settings.lockId); }
   function renderLockState() {
-    var pa = !!settings.lockId;
+    var pa = lockOn();
     $('lockState').textContent = pa
-      ? 'Låst med Face ID. Reservkod finns.'
-      : bioSupported() ? 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.'
-                       : 'Den här webbläsaren stödjer inte Face ID-lås.';
+      ? (settings.lockId ? 'Låst med Face ID, med koden som reserv.' : 'Låst med kod. Face ID är inte registrerat på den här enheten.')
+      : 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.';
     $('btnLockOn').hidden = pa;
-    $('lockCodeField').hidden = pa;
     $('btnLockOff').hidden = !pa;
   }
 
@@ -1130,7 +1124,7 @@
   /* ---------------- start ---------------- */
   function init() {
     load(); render();
-    if (settings.lockId) showLock();
+    if (lockOn()) showLock();
 
     $('btnNew').addEventListener('click', function () {
       openTrip(null);
@@ -1146,10 +1140,11 @@
       $('lockCode').focus();
     });
     $('lockCodeOk').addEventListener('click', function () {
-      sha($('lockCode').value).then(function (h) {
-        if (h === settings.lockCode) { $('lockCode').value = ''; hideLock(); }
-        else { $('lockMsg').textContent = 'Fel kod.'; $('lockCode').value = ''; }
-      });
+      if (up($('lockCode').value) === LOCK_CODE) { $('lockCode').value = ''; hideLock(); }
+      else { $('lockMsg').textContent = 'Fel kod.'; $('lockCode').value = ''; }
+    });
+    $('lockCode').addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') $('lockCodeOk').click();
     });
     $('adminSok').addEventListener('input', renderAdmin);
     $('btnAdminTsv').addEventListener('click', function () { copyText(adminTsv(), 'Loggen kopierad'); });

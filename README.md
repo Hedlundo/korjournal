@@ -152,11 +152,13 @@ följa upp.
 
 ## Lås med Face ID
 
-Admin → *Lås appen med Face ID* registrerar telefonens biometri via WebAuthn och ber om en
-reservkod på 4–8 siffror. Därefter visas en låsskärm varje gång appen startas: Face ID (eller
-Touch ID / fingeravtryck på Android), med reservkoden som andra väg in.
+Admin → *Lås appen* slår på låset direkt med koden i `LOCK_CODE` (`app.js`) och frågar därefter
+om Face ID. Svarar telefonen läggs biometrin till; annars står låset kvar med bara kod. Sedan
+möts du av en låsskärm varje gång appen startas.
 
-Kräver `https`, så det fungerar på den publicerade adressen men inte mot `localhost`.
+Koden ligger i klartext i källkoden. Repot är publikt, så vem som helst kan läsa den – vilket
+spelar mindre roll än det låter, eftersom ingen kommer åt din data via webbadressen ändå.
+Behöver koden vara hemlig måste repot bli privat.
 
 **Vad låset skyddar mot:** att någon som får tag i den olåsta telefonen läser journalen.
 **Vad det inte skyddar mot:** låset kontrolleras i webbläsaren, utan server som verifierar
