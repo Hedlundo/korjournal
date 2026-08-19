@@ -7,8 +7,9 @@ compatibility_date = "2026-01-01"
 # funktionen aldrig kan användas för att mejla någon annan.
 TO_EMAIL = "korjournal@airfilter.se"
 
-# Avsändare. Domänen airfilter.se måste vara verifierad hos Resend.
-FROM_EMAIL = "korjournal@airfilter.se"
+# Avsändare. Subdomänen send.airfilter.se verifieras hos Resend, så att
+# DNS-posterna för airfilter.se och Microsoft 365 aldrig behöver röras.
+FROM_EMAIL = "korjournal@send.airfilter.se"
 
 # Bara appen får anropa funktionen. Sätt till "*" för att tillåta alla.
 ALLOWED_ORIGIN = "https://hedlundo.github.io"
