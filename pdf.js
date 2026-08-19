@@ -142,20 +142,20 @@
   var COLS = [
     { k: 'kund',        t: 'KUND',              w: 88 },
     { k: 'kontakt',     t: 'KONTAKT',           w: 62 },
-    { k: 'syfte',       t: 'SYFTE',             w: 84 },
+    { k: 'syfte',       t: 'SYFTE',             w: 90 },
     { k: 'ordernr',     t: 'ORDERNR',           w: 48 },
     { k: 'verksamhet',  t: 'VERKSAMHET',        w: 62 },
     { k: 'datum',       t: 'DATUM',             w: 42, a: 'r' },
-    { k: 'tid',         t: 'TID',               w: 48 },
-    { k: 'matStart',    t: 'MÄTARE START',      w: 48, a: 'r' },
-    { k: 'matStopp',    t: 'MÄTARE STOPP',      w: 48, a: 'r' },
+    { k: 'tid',         t: 'TID',               w: 54 },
+    { k: 'matStart',    t: 'START',             w: 48, a: 'r' },
+    { k: 'matStopp',    t: 'STOPP',             w: 48, a: 'r' },
     { k: 'km',          t: 'KM',                w: 32, a: 'r' },
-    { k: 'adressStart', t: 'ADRESS START',      w: 92 },
-    { k: 'adressStopp', t: 'ADRESS STOPP',      w: 92 },
-    { k: 'trangsel',    t: 'TRÄNGSEL SKATT',    w: 52, a: 'r' },
-    { k: 'bransle',     t: 'BRÄNSLE CA',        w: 48, a: 'r' },
-    { k: 'person',      t: 'PERSON',            w: 68 },
-    { k: 'regnr',       t: 'REGNR',             w: 40 }
+    { k: 'adressStart', t: 'ADRESS START',      w: 94 },
+    { k: 'adressStopp', t: 'ADRESS STOPP',      w: 94 },
+    { k: 'trangsel',    t: 'TR SKATT',          w: 44, a: 'r' },
+    { k: 'bransle',     t: 'DIESEL',            w: 42, a: 'r' },
+    { k: 'person',      t: 'FÖRARE',            w: 60 },
+    { k: 'regnr',       t: 'REGNR',             w: 44 }
   ];
 
   var PW = 842, PH = 595, M = 22, PAD = 3;
@@ -219,9 +219,16 @@
 
     var totKm = 0, totTr = 0, totFuel = 0;
     for (var r = 0; r < rows.length; r++) {
-      var row = rows[r], cells = [], maxLines = 1;
+      var row = rows[r], cells = [], storlekar = [], maxLines = 1;
       for (i = 0; i < COLS.length; i++) {
-        var lines = wrap(row[COLS[i].k], w[i] - 2 * PAD, FS, false);
+        var bredd = w[i] - 2 * PAD, fs = FS;
+        var text = String(row[COLS[i].k] == null ? '' : row[COLS[i].k]);
+        var langst = text.split(/s+/).reduce(function (a, o) {
+          return textW(o, 1, false) > textW(a, 1, false) ? o : a;
+        }, '');
+        while (fs > 4.8 && textW(langst, fs, false) > bredd) fs -= 0.2;
+        storlekar.push(fs);
+        var lines = wrap(text, bredd, fs, false);
         if (lines.length > 3) lines = lines.slice(0, 3);
         cells.push(lines);
         if (lines.length > maxLines) maxLines = lines.length;
@@ -232,7 +239,7 @@
       for (i = 0; i < COLS.length; i++) {
         var cx = COLS[i].a === 'r' ? xs[i] + w[i] - PAD : xs[i] + PAD;
         for (var l = 0; l < cells[i].length; l++) {
-          page.text(cells[i][l], cx, y - 9.2 - l * LH, FS, false, COLS[i].a || 'l', w[i] - 2 * PAD);
+          page.text(cells[i][l], cx, y - 9.2 - l * LH, storlekar[i], false, COLS[i].a || 'l', w[i] - 2 * PAD);
         }
       }
       page.line(M, y - rh, right, y - rh, 0.85, 0.4);

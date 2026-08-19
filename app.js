@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.6.0';
+  var VER = '3.8.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -21,8 +21,9 @@
     { namn: 'BUDBIL',  nr: '',       mil: 0,  forb: 1.0 }    // företagsbil: bara loggning
   ];
   var VERKSAMHETER = ['FILTER', 'MUSIK'];
-  var DEFAULT_MAIL = 'info@airstrategy.se';
+  var DEFAULT_MAIL = 'george@airstrategy.se';
   var LOCK_CODE = '1934';
+  var DEFAULT_DIESEL = 20;   // kr/liter, riktvärde tills ett eget pris läggs in
 
   function carDef(namn) {
     for (var i = 0; i < CARS.length; i++) if (CARS[i].namn === namn) return CARS[i];
@@ -40,7 +41,7 @@
     if (!settings.regnrs) settings.regnrs = {};
     if (DRIVERS.indexOf(settings.person) === -1) settings.person = DRIVERS[0];
     if (!carDef(settings.bil) || settings.bil !== carDef(settings.bil).namn) settings.bil = CARS[0].namn;
-    if (!settings.mail) settings.mail = DEFAULT_MAIL;
+    if (!settings.mail || settings.mail === 'info@airstrategy.se') settings.mail = DEFAULT_MAIL;
     if (settings.lock == null) settings.lock = true;   // låst från början
     if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
     /* äldre resor sparade bara regnr – knyt dem till rätt bil */
@@ -54,7 +55,8 @@
     });
     /* dieselpriset är en historik: varje pris gäller från sitt datum */
     if (!settings.dieselHist || !settings.dieselHist.length) {
-      settings.dieselHist = settings.diesel ? [{ from: '2000-01-01', pris: numOf(settings.diesel) }] : [];
+      /* ett riktvärde så bränslekostnaden räknas från start – ändras i adminpanelen */
+      settings.dieselHist = [{ from: '2000-01-01', pris: numOf(settings.diesel) || DEFAULT_DIESEL }];
     }
     settings.dieselHist = settings.dieselHist
       .filter(function (p) { return p && p.from && numOf(p.pris); })
