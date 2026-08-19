@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.2.0';
+  var VER = '4.2.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -21,7 +21,7 @@
     { namn: 'BUDBIL',  nr: '',       mil: 0,  forb: 1.0 }    // företagsbil: bara loggning
   ];
   var VERKSAMHETER = ['FILTER', 'MUSIK'];
-  var DEFAULT_MAIL = 'korjournal@airfilter.se';
+  var DEFAULT_MAIL = 'george@airstrategy.se';
   var LOCK_CODE = '1934';
   var DEFAULT_DIESEL = 20;   // kr/liter, riktvärde tills ett eget pris läggs in
 
@@ -41,8 +41,9 @@
     if (!settings.regnrs) settings.regnrs = {};
     if (DRIVERS.indexOf(settings.person) === -1) settings.person = DRIVERS[0];
     if (!carDef(settings.bil) || settings.bil !== carDef(settings.bil).namn) settings.bil = CARS[0].namn;
-    if (!settings.mail || settings.mail === 'info@airstrategy.se' ||
-        settings.mail === 'george@airstrategy.se') settings.mail = DEFAULT_MAIL;
+    /* förvald adress följer med när den ändras i koden, men en adress du
+       skrivit in själv i adminpanelen rörs aldrig */
+    if (!settings.mail || !settings.mailManual) settings.mail = DEFAULT_MAIL;
     if (settings.lock == null) settings.lock = true;   // låst från början
     if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
     /* äldre resor sparade bara regnr – knyt dem till rätt bil */
@@ -1306,6 +1307,7 @@
 
     $('adminMail').addEventListener('change', function () {
       settings.mail = up(this.value) || DEFAULT_MAIL;
+      settings.mailManual = settings.mail !== DEFAULT_MAIL;
       saveSettings(); toast('Mottagare sparad');
     });
     $('adminApi').addEventListener('change', function () {
