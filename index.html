@@ -246,12 +246,15 @@
 
     <div class="recap" id="sendRecap"></div>
 
-    <button id="btnMakePdf" class="btn btn-primary btn-block">Skapa PDF och öppna mejl</button>
-    <div class="hint center">PDF:en bifogas i mejlet du väljer i delningsrutan.</div>
+    <div class="mailto-row"><span>Skickas till</span><b id="mailToLabel"></b></div>
+
+    <button id="btnMakePdf" class="btn btn-primary btn-block">1. Skapa PDF och bifoga</button>
+    <div class="hint">PDF:en bifogas automatiskt i appen du väljer. Mottagare och ämne måste du skriva själv – mejlappar tillåter inte att en webbsida fyller i dem tillsammans med en bilaga.</div>
+
+    <button id="btnOpenMail" class="btn btn-ghost btn-block">2. Öppna mejl med adress och ämne ifyllt</button>
+    <div class="hint">Tomt mejl till adressen ovan med ämnet KÖRJOURNAL. Bifoga PDF:en du nyss sparade.</div>
 
     <div class="divider"></div>
-    <div class="mailto-row"><span>Skickas till</span><b id="mailToLabel"></b></div>
-    <button id="btnOpenMail" class="btn btn-ghost btn-block">Öppna mejl med adress och ämne ifyllt</button>
     <button id="btnCopyTsv" class="btn btn-ghost btn-block">Kopiera rader för Excel</button>
     <button id="btnPreviewPdf" class="btn btn-ghost btn-block">Förhandsgranska PDF</button>
   </div>

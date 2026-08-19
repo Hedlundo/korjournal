@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.9.0';
+  var VER = '3.9.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
