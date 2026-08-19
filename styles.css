@@ -26,6 +26,20 @@ body{
 }
 button{font:inherit;color:inherit}
 
+/* ---------- lås ---------- */
+.lock{
+  position:fixed;inset:0;z-index:100;background:var(--ink);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:32px 24px calc(32px + var(--safe-b));text-align:center;
+}
+.lock-logo{width:72px;height:66px;color:var(--yellow)}
+.lock h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.03em}
+.lock p{margin:0 0 8px;color:#c9ccd2;font-size:15px;max-width:34ch}
+.lock .btn{width:100%;max-width:320px}
+.lock .link-btn{color:#c9ccd2}
+.lock #lockCodeBox{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+.lock #lockCode{text-align:center;letter-spacing:.4em;background:#1e2026;color:#fff;border-color:#31343c}
+
 /* ---------- topbar ---------- */
 .topbar{
   position:sticky;top:0;z-index:20;

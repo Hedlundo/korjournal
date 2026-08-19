@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.0.0';
+  var VER = '3.1.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -541,6 +541,106 @@
     }
   }
 
+  /* ---------------- lås med Face ID ----------------
+     WebAuthn mot telefonens egen biometri. Låset sitter i appen och
+     kontrolleras lokalt – det stoppar den som får tag i telefonen, inte
+     någon som läser koden. Reservkoden behövs när biometrin inte svarar. */
+  function rnd(n) {
+    var a = new Uint8Array(n);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return a;
+  }
+  function b64(buf) {
+    var b = new Uint8Array(buf), s = '';
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s);
+  }
+  function unb64(str) {
+    var s = atob(str), a = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return a;
+  }
+  function sha(txt) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode('kj:' + txt)).then(b64);
+  }
+  function bioSupported() {
+    return !!(window.PublicKeyCredential && navigator.credentials && location.protocol === 'https:');
+  }
+
+  function lockCreate() {
+    return navigator.credentials.create({
+      publicKey: {
+        challenge: rnd(32),
+        rp: { name: 'AIRFILTER GROUP - KÖRJOURNAL' },
+        user: { id: rnd(16), name: settings.person || 'forare', displayName: settings.person || 'Förare' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }
+    }).then(function (cred) { return b64(cred.rawId); });
+  }
+  function lockVerify() {
+    return navigator.credentials.get({
+      publicKey: {
+        challenge: rnd(32),
+        allowCredentials: settings.lockId ? [{ type: 'public-key', id: unb64(settings.lockId) }] : [],
+        userVerification: 'required',
+        timeout: 60000
+      }
+    });
+  }
+
+  function showLock() {
+    $('lockScreen').hidden = false;
+    document.body.style.overflow = 'hidden';
+    $('lockCodeBox').hidden = true;
+    $('lockBio').hidden = !settings.lockId;
+    $('lockMsg').textContent = 'Lås upp för att fortsätta';
+    if (settings.lockId) setTimeout(tryBio, 300);
+  }
+  function hideLock() {
+    $('lockScreen').hidden = true;
+    document.body.style.overflow = '';
+  }
+  function tryBio() {
+    lockVerify().then(hideLock).catch(function () {
+      $('lockMsg').textContent = 'Face ID svarade inte. Försök igen eller använd reservkoden.';
+    });
+  }
+
+  function enableLock() {
+    if (!bioSupported()) {
+      toast('Face ID kräver att appen körs över https', 4000);
+      return;
+    }
+    var kod = prompt('Välj en reservkod (4–8 siffror) om Face ID inte fungerar:');
+    if (!kod || !/^[0-9]{4,8}$/.test(kod)) { toast('Koden måste vara 4–8 siffror'); return; }
+    lockCreate().then(function (id) {
+      return sha(kod).then(function (h) {
+        settings.lockId = id; settings.lockCode = h;
+        saveSettings(); renderLockState();
+        toast('Låset är på – Face ID krävs nästa gång appen öppnas', 4000);
+      });
+    }).catch(function () {
+      toast('Telefonen ville inte skapa något lås', 4000);
+    });
+  }
+  function disableLock() {
+    if (!confirm('Ta bort låset? Appen öppnas då utan Face ID.')) return;
+    delete settings.lockId; delete settings.lockCode;
+    saveSettings(); renderLockState();
+    toast('Låset borttaget');
+  }
+  function renderLockState() {
+    var pa = !!settings.lockId;
+    $('lockState').textContent = pa
+      ? 'Låst med Face ID. Reservkod finns.'
+      : bioSupported() ? 'Appen är olåst. Vem som helst som har telefonen kommer åt journalen.'
+                       : 'Face ID kräver https – fungerar först när appen är publicerad.';
+    $('btnLockOn').hidden = pa;
+    $('btnLockOff').hidden = !pa;
+  }
+
   /* ---------------- konfiguration (adminpanelen) ---------------- */
   function renderBackupInfo() {
     var bi = $('backupInfo'), sedan = settings.backupAt
@@ -924,6 +1024,7 @@
     renderPris();
     renderAdmin();
     renderBackupInfo();
+    renderLockState();
     open($('sheetAdmin'));
   }
 
@@ -1019,6 +1120,7 @@
   /* ---------------- start ---------------- */
   function init() {
     load(); render();
+    if (settings.lockId) showLock();
 
     $('btnNew').addEventListener('click', function () {
       openTrip(null);
@@ -1026,6 +1128,19 @@
     $('btnSend').addEventListener('click', openSend);
     $('btnStats').addEventListener('click', openStats);
     $('btnAdmin').addEventListener('click', openAdmin);
+    $('btnLockOn').addEventListener('click', enableLock);
+    $('btnLockOff').addEventListener('click', disableLock);
+    $('lockBio').addEventListener('click', tryBio);
+    $('lockUseCode').addEventListener('click', function () {
+      $('lockCodeBox').hidden = false;
+      $('lockCode').focus();
+    });
+    $('lockCodeOk').addEventListener('click', function () {
+      sha($('lockCode').value).then(function (h) {
+        if (h === settings.lockCode) { $('lockCode').value = ''; hideLock(); }
+        else { $('lockMsg').textContent = 'Fel kod.'; $('lockCode').value = ''; }
+      });
+    });
     $('adminSok').addEventListener('input', renderAdmin);
     $('btnAdminTsv').addEventListener('click', function () { copyText(adminTsv(), 'Loggen kopierad'); });
     $('btnAddPris').addEventListener('click', function () {

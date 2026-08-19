@@ -15,6 +15,23 @@
 </head>
 <body>
 
+<!-- ===================== LÅS ===================== -->
+<div id="lockScreen" class="lock" hidden>
+  <svg class="lock-logo" viewBox="55 228 267 242" aria-hidden="true"><g fill="currentColor">
+    <path d="M 80,382 L 186,236 C 192,228 206,228 212,236 L 280,320 L 250,336 L 203,270 C 201,266 197,266 195,271 L 128,372 Z"/>
+    <path d="M 322,300 C 230,318 140,345 78,388 C 150,375 240,348 322,300 Z"/>
+    <path d="M 278,386 C 200,400 130,430 55,470 C 130,452 205,420 278,386 Z"/>
+  </g></svg>
+  <h1>Körjournal</h1>
+  <p id="lockMsg">Lås upp för att fortsätta</p>
+  <button id="lockBio" class="btn btn-primary">Lås upp med Face ID</button>
+  <button id="lockUseCode" class="link-btn">Använd reservkod</button>
+  <div id="lockCodeBox" hidden>
+    <input id="lockCode" class="inp num" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="8">
+    <button id="lockCodeOk" class="btn btn-ghost">Lås upp</button>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="brand">
     <svg viewBox="55 228 267 242" aria-hidden="true"><g fill="currentColor">
@@ -291,7 +308,14 @@
     </section>
 
     <section class="step">
-      <h3><span class="num">4</span> Säkerhetskopia</h3>
+      <h3><span class="num">4</span> Lås</h3>
+      <div id="lockState" class="hint"></div>
+      <button id="btnLockOn" class="btn btn-ghost btn-block">Lås appen med Face ID</button>
+      <button id="btnLockOff" class="btn btn-danger btn-block" hidden>Ta bort låset</button>
+    </section>
+
+    <section class="step">
+      <h3><span class="num">5</span> Säkerhetskopia</h3>
       <div class="backup" id="backupInfo"></div>
       <button id="btnExport" class="btn btn-ghost btn-block">Exportera säkerhetskopia (JSON)</button>
       <button id="btnImport" class="btn btn-ghost btn-block">Importera säkerhetskopia</button>

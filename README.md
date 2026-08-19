@@ -150,6 +150,19 @@ dieselåtgång och bränslekostnad. *Kopiera tabellen för Excel* lägger den p�
 Ordernumret är fältet som kopplar en resa till en order, så fraktkostnaden per order går att
 följa upp.
 
+## Lås med Face ID
+
+Admin → *Lås appen med Face ID* registrerar telefonens biometri via WebAuthn och ber om en
+reservkod på 4–8 siffror. Därefter visas en låsskärm varje gång appen startas: Face ID (eller
+Touch ID / fingeravtryck på Android), med reservkoden som andra väg in.
+
+Kräver `https`, så det fungerar på den publicerade adressen men inte mot `localhost`.
+
+**Vad låset skyddar mot:** att någon som får tag i den olåsta telefonen läser journalen.
+**Vad det inte skyddar mot:** låset kontrolleras i webbläsaren, utan server som verifierar
+signaturen. Den som kan JavaScript kan gå runt det. Datan i sig ligger ändå bara på telefonen –
+ingen kan komma åt den via webbadressen.
+
 ## Ny version
 
 Höj `CACHE` i `sw.js` och `VER` i `app.js` när du publicerar ändringar, annars kan telefoner
