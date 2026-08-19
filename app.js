@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '3.9.1';
+  var VER = '4.0.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -712,6 +712,7 @@
       });
     });
     $('adminMail').value = settings.mail || DEFAULT_MAIL;
+    $('adminApi').value = settings.api || '';
   }
 
   /* ---------------- skicka in ---------------- */
@@ -738,6 +739,10 @@
     if (settings.person && plist.indexOf(settings.person) >= 0) $('sendPerson').value = settings.person;
 
     $('mailToLabel').textContent = settings.mail || 'Ingen mottagare inställd';
+    var serverPa = !!up(settings.api);
+    $('btnSendServer').hidden = !serverPa;
+    $('serverHint').hidden = !serverPa;
+    $('manuellaSteg').hidden = serverPa;
     updateRecap();
     open($('sheetSend'));
   }
@@ -923,6 +928,52 @@
     } else {
       fallback(r, subject, body);
     }
+  }
+
+  /* ---- utskick via egen server: en knapp, inget att fylla i ---- */
+  function blobBase64(blob) {
+    return new Promise(function (res, rej) {
+      var fr = new FileReader();
+      fr.onload = function () { res(String(fr.result).split(',')[1]); };
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  function sendViaServer() {
+    var r = buildPdfBlob();
+    if (!r) return;
+    var knapp = $('btnSendServer');
+    knapp.disabled = true;
+    knapp.textContent = 'Skickar…';
+    var aterstall = function (txt) {
+      knapp.disabled = false;
+      knapp.textContent = 'Skicka in körjournal';
+      if (txt) toast(txt, 5000);
+    };
+    blobBase64(r.blob).then(function (b64) {
+      return fetch(settings.api, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: r.name,
+          pdf: b64,
+          text: mailBody(r),
+          driver: r.pers,
+          period: periodLabel()
+        })
+      });
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok || !data.ok) throw new Error(data.error || ('Servern svarade ' + res.status));
+        markSent(r.sel);
+        aterstall('Inskickad till ' + (data.till || settings.mail) + ' · ' + r.sel.length + ' resor');
+        close($('sheetSend'));
+      });
+    }).catch(function (err) {
+      aterstall('Kunde inte skicka: ' + err.message + '. Använd mejlappen i stället.');
+      $('manuellaSteg').hidden = false;
+    });
   }
 
   /* öppnar mejlappen med mottagare och ämne redan ifyllda */
@@ -1250,6 +1301,12 @@
       settings.mail = up(this.value) || DEFAULT_MAIL;
       saveSettings(); toast('Mottagare sparad');
     });
+    $('adminApi').addEventListener('change', function () {
+      settings.api = up(this.value);
+      saveSettings();
+      toast(settings.api ? 'Utskick sker nu direkt via servern' : 'Utskick sker via mejlappen', 4000);
+    });
+    $('btnSendServer').addEventListener('click', sendViaServer);
     $('sendPeriod').addEventListener('change', updateRecap);
     $('sendPerson').addEventListener('change', updateRecap);
     $('btnMakePdf').addEventListener('click', sendPdf);

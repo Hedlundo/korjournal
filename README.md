@@ -91,6 +91,42 @@ adress, Ebba från sin. En gemensam avsändaradress skulle kräva en server som 
 Extra: **Kopiera rader för Excel** lägger raderna på urklipp (tabbseparerat) för inklistring
 i det gamla arket.
 
+## Utskick direkt från appen (server)
+
+`server/` innehåller en Cloudflare Worker som tar emot PDF:en och mejlar den via Resend. När den
+är uppsatt blir utskicket **en enda knapp** – adress, ämne och bilaga sköts av servern.
+
+Mottagaradressen ligger i serverns miljövariabler, inte i appen. Den som hittar adressen till
+funktionen kan alltså bara skicka en körjournal till er egen inkorg.
+
+```bash
+cd KORJOURNAL/server
+npx wrangler login
+npx wrangler secret put RESEND_API_KEY
+npx wrangler deploy
+```
+
+Innan det: skapa ett konto på resend.com och verifiera avsändardomänen (DNS-poster som
+IT-ansvarig lägger in). Justera `TO_EMAIL`, `FROM_EMAIL` och `ALLOWED_ORIGIN` i `wrangler.toml`.
+
+Klistra sedan in adressen wrangler skriver ut (`https://korjournal-mail....workers.dev`) i
+**Admin → Utskicksadress**. Lämnas fältet tomt används mejlappen i två steg som förut. Går
+utskicket inte fram visas de manuella stegen automatiskt igen, och inga resor bockas av.
+
+## Egen domän
+
+GitHub Pages kan ligga på er egen adress, t.ex. `korjournal.airstrategy.se`:
+
+1. Lägg en fil `CNAME` i repots rot med enbart domännamnet
+2. DNS-post: `CNAME korjournal → hedlundo.github.io`
+3. Settings → Pages → Custom domain → skriv adressen → *Enforce HTTPS*
+4. Ändra `ALLOWED_ORIGIN` i `wrangler.toml` till den nya adressen och kör `npx wrangler deploy`
+
+**Byt adress innan appen används skarpt.** Resorna ligger i webbläsarens lagring per adress, så
+allt som registrerats på `github.io` följer inte med till den nya domänen. Behöver du flytta i
+efterhand: exportera säkerhetskopian först, öppna den nya adressen och importera. Face ID måste
+också registreras om, eftersom nyckeln är knuten till domänen.
+
 ## Köra lokalt
 
 ```bash

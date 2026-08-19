@@ -248,11 +248,16 @@
 
     <div class="mailto-row"><span>Skickas till</span><b id="mailToLabel"></b></div>
 
-    <button id="btnMakePdf" class="btn btn-primary btn-block">1. Skapa PDF och bifoga</button>
-    <div class="hint">PDF:en bifogas automatiskt i appen du väljer. Mottagare och ämne måste du skriva själv – mejlappar tillåter inte att en webbsida fyller i dem tillsammans med en bilaga.</div>
+    <button id="btnSendServer" class="btn btn-primary btn-block" hidden>Skicka in körjournal</button>
+    <div class="hint" id="serverHint" hidden>PDF:en bifogas och mejlet skickas direkt. Du behöver inte fylla i något.</div>
 
-    <button id="btnOpenMail" class="btn btn-ghost btn-block">2. Öppna mejl med adress och ämne ifyllt</button>
-    <div class="hint">Tomt mejl till adressen ovan med ämnet KÖRJOURNAL. Bifoga PDF:en du nyss sparade.</div>
+    <div id="manuellaSteg">
+      <button id="btnMakePdf" class="btn btn-primary btn-block">1. Skapa PDF och bifoga</button>
+      <div class="hint">PDF:en bifogas automatiskt i appen du väljer. Mottagare och ämne måste du skriva själv – mejlappar tillåter inte att en webbsida fyller i dem tillsammans med en bilaga.</div>
+
+      <button id="btnOpenMail" class="btn btn-ghost btn-block">2. Öppna mejl med adress och ämne ifyllt</button>
+      <div class="hint">Tomt mejl till adressen ovan med ämnet KÖRJOURNAL. Bifoga PDF:en du nyss sparade.</div>
+    </div>
 
     <div class="divider"></div>
     <button id="btnCopyTsv" class="btn btn-ghost btn-block">Kopiera rader för Excel</button>
@@ -297,6 +302,11 @@
       <label class="field">
         <span class="lbl">Mottagare i affärssystemet</span>
         <input id="adminMail" class="inp" type="email" inputmode="email" autocapitalize="off" placeholder="george@airstrategy.se">
+      </label>
+      <label class="field">
+        <span class="lbl">Utskicksadress <em>server</em></span>
+        <input id="adminApi" class="inp" type="url" inputmode="url" autocapitalize="off" placeholder="https://korjournal-mail....workers.dev">
+        <div class="hint">Fylls i när servern är uppsatt. Då blir utskicket en enda knapp som skickar mejlet direkt. Lämnas den tom används mejlappen i två steg.</div>
       </label>
     </section>
 

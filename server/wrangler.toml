@@ -1,0 +1,17 @@
+name = "korjournal-mail"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+# Adressen körjournalen skickas TILL. Ligger här, inte i appen, så att
+# funktionen aldrig kan användas för att mejla någon annan.
+TO_EMAIL = "george@airstrategy.se"
+
+# Avsändare. Domänen måste vara verifierad hos Resend.
+FROM_EMAIL = "korjournal@airstrategy.se"
+
+# Bara appen får anropa funktionen. Sätt till "*" för att tillåta alla.
+ALLOWED_ORIGIN = "https://hedlundo.github.io"
+
+# RESEND_API_KEY sätts som hemlighet, aldrig här:
+#   npx wrangler secret put RESEND_API_KEY
