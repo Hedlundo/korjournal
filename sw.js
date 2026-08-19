@@ -1,5 +1,5 @@
 /* Offline-cache för Körjournal. Höj CACHE när du släpper en ny version. */
-var CACHE = 'korjournal-v27';
+var CACHE = 'korjournal-v28';
 var ASSETS = [
   './',
   './index.html',
