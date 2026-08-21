@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.6.1';
+  var VER = '4.6.2';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -10,6 +10,10 @@
 
   var TAB = String.fromCharCode(9), NL = String.fromCharCode(10);
   var $ = function (id) { return document.getElementById(id); };
+  /* Om en telefon råkar köra ny kod mot gammal HTML saknas något element.
+     Då ska bara den knappen sluta fungera – inte hela appen. */
+  function on(id, ev, fn) { var el = $(id); if (el) el.addEventListener(ev, fn); }
+  function set(id, prop, v) { var el = $(id); if (el) el[prop] = v; }
   var trips = [], settings = {};
   var editId = null;
 
@@ -230,7 +234,7 @@
         (pagaende ? ' · ' + pagaende + ' påbörjad' + (pagaende === 1 ? '' : 'e') : '') + '</div>' +
         (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '') +
         '<button type="button" id="summarySend" class="btn btn-primary send-top">Skicka in körjournal</button>';
-      $('summarySend').addEventListener('click', openSend);
+      on('summarySend', 'click', openSend);
     } else {
       var manad = monthKey(todayISO()), mkm = 0;
       trips.forEach(function (t) { if (monthKey(t.datum) === manad) mkm += numOf(t.km); });
@@ -779,13 +783,13 @@
       plist.map(function (p) { return '<option value="' + esc(p) + '">' + esc(p) + '</option>'; }).join('');
     if (settings.person && plist.indexOf(settings.person) >= 0) $('sendPerson').value = settings.person;
 
-    $('sendDone').hidden = true;
-    $('sendForm').hidden = false;
+    set('sendDone', 'hidden', true);
+    set('sendForm', 'hidden', false);
     $('mailToLabel').textContent = settings.mail || 'Ingen mottagare inställd';
     var serverPa = !!up(settings.api);
-    $('btnSendServer').hidden = !serverPa;
-    $('serverHint').hidden = !serverPa;
-    $('manuellaSteg').hidden = serverPa;
+    set('btnSendServer', 'hidden', !serverPa);
+    set('serverHint', 'hidden', !serverPa);
+    set('manuellaSteg', 'hidden', serverPa);
     updateRecap();
     open($('sheetSend'));
   }
@@ -958,11 +962,11 @@
   var doneIds = [];
   function showDone(titel, text, sel) {
     doneIds = (sel || []).map(function (t) { return t.id; });
-    $('doneTitle').textContent = titel;
-    $('doneText').textContent = text;
-    $('btnDoneUndo').hidden = !doneIds.length;
-    $('sendForm').hidden = true;
-    $('sendDone').hidden = false;
+    set('doneTitle', 'textContent', titel);
+    set('doneText', 'textContent', text);
+    set('btnDoneUndo', 'hidden', !doneIds.length);
+    set('sendForm', 'hidden', true);
+    set('sendDone', 'hidden', false);
     $('sheetSend').querySelector('.sheet-body').scrollTop = 0;
   }
 
@@ -1284,33 +1288,36 @@
   }
 
   /* ---------------- start ---------------- */
+  /* Startar appen. Går något fel ska resten ändå fungera – en trasig
+     detalj får aldrig göra hela journalen oanvändbar. */
   function init() {
-    load(); render();
+    try { load(); } catch (e) { trips = trips || []; settings = settings || {}; }
+    try { render(); } catch (e) { /* listan ritas om vid nästa ändring */ }
     if (lockOn()) showLock();
 
-    $('btnNew').addEventListener('click', function () {
+    on('btnNew', 'click', function () {
       openTrip(null);
     });
-    $('btnSend').addEventListener('click', openSend);
-    $('btnStats').addEventListener('click', openStats);
-    $('btnAdmin').addEventListener('click', openAdmin);
-    $('btnLockOn').addEventListener('click', enableLock);
-    $('btnLockOff').addEventListener('click', disableLock);
-    $('lockBio').addEventListener('click', tryBio);
-    $('lockUseCode').addEventListener('click', function () {
+    on('btnSend', 'click', openSend);
+    on('btnStats', 'click', openStats);
+    on('btnAdmin', 'click', openAdmin);
+    on('btnLockOn', 'click', enableLock);
+    on('btnLockOff', 'click', disableLock);
+    on('lockBio', 'click', tryBio);
+    on('lockUseCode', 'click', function () {
       $('lockCodeBox').hidden = false;
       $('lockCode').focus();
     });
-    $('lockCodeOk').addEventListener('click', function () {
+    on('lockCodeOk', 'click', function () {
       if (up($('lockCode').value) === LOCK_CODE) { $('lockCode').value = ''; hideLock(); }
       else { $('lockMsg').textContent = 'Fel kod.'; $('lockCode').value = ''; }
     });
-    $('lockCode').addEventListener('keydown', function (ev) {
+    on('lockCode', 'keydown', function (ev) {
       if (ev.key === 'Enter') $('lockCodeOk').click();
     });
-    $('adminSok').addEventListener('input', renderAdmin);
-    $('btnAdminTsv').addEventListener('click', function () { copyText(adminTsv(), 'Loggen kopierad'); });
-    $('btnRensa').addEventListener('click', function () {
+    on('adminSok', 'input', renderAdmin);
+    on('btnAdminTsv', 'click', function () { copyText(adminTsv(), 'Loggen kopierad'); });
+    on('btnRensa', 'click', function () {
       var skickade = trips.filter(function (t) { return !!t.sentAt; });
       if (!skickade.length) { toast('Det finns inga inskickade resor att rensa'); return; }
       if (!confirm('Ta bort ' + resor(skickade.length) + ' som redan skickats in?\n' +
@@ -1319,7 +1326,7 @@
       saveTrips(); render(); renderAdmin(); renderBackupInfo();
       toast(resor(skickade.length) + ' borttagna');
     });
-    $('btnAddPris').addEventListener('click', function () {
+    on('btnAddPris', 'click', function () {
       var d = $('prisDatum').value, p = numOf($('prisVarde').value);
       if (!d || !p) { toast('Fyll i datum och pris'); return; }
       addPris(d, p);
@@ -1327,17 +1334,17 @@
       renderPris(); renderAdmin(); render();
       toast('Dieselpris ' + kr(p) + '/l från ' + d);
     });
-    $('statCar').addEventListener('change', function () { statCar = this.value; renderStats(); });
-    $('btnCopyStats').addEventListener('click', function () { copyText(statsTsv(), 'Tabellen kopierad'); });
+    on('statCar', 'change', function () { statCar = this.value; renderStats(); });
+    on('btnCopyStats', 'click', function () { copyText(statsTsv(), 'Tabellen kopierad'); });
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function (b) {
       b.addEventListener('click', function () { close(b.closest('.sheet')); });
     });
 
-    $('btnSave').addEventListener('click', function () { saveTrip(false); });
-    $('btnSaveTop').addEventListener('click', function () { saveTrip(false); });
-    $('btnSaveReturn').addEventListener('click', function () { saveTrip(true); });
-    $('btnDelete').addEventListener('click', function () {
+    on('btnSave', 'click', function () { saveTrip(false); });
+    on('btnSaveTop', 'click', function () { saveTrip(false); });
+    on('btnSaveReturn', 'click', function () { saveTrip(true); });
+    on('btnDelete', 'click', function () {
       if (!editId) return;
       if (!confirm('Ta bort resan?')) return;
       trips = trips.filter(function (t) { return t.id !== editId; });
@@ -1346,23 +1353,23 @@
 
     geoSuggest($('fAdrStart'), $('dlAdrStart'), addressList);
     geoSuggest($('fAdrStopp'), $('dlAdrStopp'), addressList);
-    $('gpsStart').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStart'), 'start'); });
-    $('gpsStopp').addEventListener('click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStopp'), 'stop'); });
-    $('btnCalcKm').addEventListener('click', function (e) { e.preventDefault(); suggestFromMap(); });
+    on('gpsStart', 'click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStart'), 'start'); });
+    on('gpsStopp', 'click', function (e) { e.preventDefault(); useMyPosition(this, $('fAdrStopp'), 'stop'); });
+    on('btnCalcKm', 'click', function (e) { e.preventDefault(); suggestFromMap(); });
     /* skriver man om adressen gäller inte den sparade GPS-punkten längre */
-    $('fAdrStart').addEventListener('input', function () { delete $('sheetTrip').dataset.startLat; });
-    $('fAdrStopp').addEventListener('input', function () { delete $('sheetTrip').dataset.stopLat; });
+    on('fAdrStart', 'input', function () { delete $('sheetTrip').dataset.startLat; });
+    on('fAdrStopp', 'input', function () { delete $('sheetTrip').dataset.stopLat; });
 
-    $('btnAddTrangsel').addEventListener('click', function (e) { e.preventDefault(); addPassage(); });
-    $('fTrangselBelopp').addEventListener('keydown', function (ev) {
+    on('btnAddTrangsel', 'click', function (e) { e.preventDefault(); addPassage(); });
+    on('fTrangselBelopp', 'keydown', function (ev) {
       if (ev.key === 'Enter') { ev.preventDefault(); addPassage(); }
     });
-    $('nowStart').addEventListener('click', function (e) { e.preventDefault(); $('fTidStart').value = nowHM(); });
-    $('nowStopp').addEventListener('click', function (e) { e.preventDefault(); $('fTidStopp').value = nowHM(); });
-    $('fMatStart').addEventListener('input', calcKm);
-    $('fMatStopp').addEventListener('input', calcKm);
-    $('dayPrev').addEventListener('click', function (e) { e.preventDefault(); $('fDatum').value = shiftISO($('fDatum').value || todayISO(), -1); });
-    $('dayNext').addEventListener('click', function (e) { e.preventDefault(); $('fDatum').value = shiftISO($('fDatum').value || todayISO(), 1); });
+    on('nowStart', 'click', function (e) { e.preventDefault(); $('fTidStart').value = nowHM(); });
+    on('nowStopp', 'click', function (e) { e.preventDefault(); $('fTidStopp').value = nowHM(); });
+    on('fMatStart', 'input', calcKm);
+    on('fMatStopp', 'input', calcKm);
+    on('dayPrev', 'click', function (e) { e.preventDefault(); $('fDatum').value = shiftISO($('fDatum').value || todayISO(), -1); });
+    on('dayNext', 'click', function (e) { e.preventDefault(); $('fDatum').value = shiftISO($('fDatum').value || todayISO(), 1); });
     Array.prototype.forEach.call($('dateChips').querySelectorAll('.chip'), function (b) {
       b.addEventListener('click', function (e) {
         e.preventDefault();
@@ -1370,19 +1377,19 @@
       });
     });
 
-    $('adminMail').addEventListener('change', function () {
+    on('adminMail', 'change', function () {
       settings.mail = up(this.value) || DEFAULT_MAIL;
       settings.mailManual = settings.mail !== DEFAULT_MAIL;
       saveSettings(); toast('Mottagare sparad');
     });
-    $('adminApi').addEventListener('change', function () {
+    on('adminApi', 'change', function () {
       settings.api = up(this.value);
       saveSettings();
       toast(settings.api ? 'Utskick sker nu direkt via servern' : 'Utskick sker via mejlappen', 4000);
     });
-    $('btnSendServer').addEventListener('click', sendViaServer);
-    $('btnDoneClose').addEventListener('click', function () { close($('sheetSend')); });
-    $('btnForceUpdate').addEventListener('click', function () {
+    on('btnSendServer', 'click', sendViaServer);
+    on('btnDoneClose', 'click', function () { close($('sheetSend')); });
+    on('btnForceUpdate', 'click', function () {
       toast('Hämtar senaste versionen…', 4000);
       var klart = function () { location.reload(true); };
       if (!('serviceWorker' in navigator)) { klart(); return; }
@@ -1394,31 +1401,31 @@
         });
       }).then(klart).catch(klart);
     });
-    $('btnDoneUndo').addEventListener('click', function () {
+    on('btnDoneUndo', 'click', function () {
       trips.forEach(function (t) { if (doneIds.indexOf(t.id) >= 0) delete t.sentAt; });
       saveTrips(); render(); close($('sheetSend'));
       toast('Markeringen ångrad – resorna ligger kvar att skicka in', 4000);
     });
-    $('sendPeriod').addEventListener('change', updateRecap);
-    $('sendPerson').addEventListener('change', updateRecap);
-    $('btnMakePdf').addEventListener('click', sendPdf);
+    on('sendPeriod', 'change', updateRecap);
+    on('sendPerson', 'change', updateRecap);
+    on('btnMakePdf', 'click', sendPdf);
 
-    $('btnCopyTsv').addEventListener('click', function () { copyText(tsv(), 'Rader kopierade – klistra in i Excel'); });
-    $('btnPreviewPdf').addEventListener('click', function () {
+    on('btnCopyTsv', 'click', function () { copyText(tsv(), 'Rader kopierade – klistra in i Excel'); });
+    on('btnPreviewPdf', 'click', function () {
       var r = buildPdfBlob(); if (!r) return;
       var url = URL.createObjectURL(r.blob);
       window.open(url, '_blank');
       setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
     });
 
-    $('btnExport').addEventListener('click', function () {
+    on('btnExport', 'click', function () {
       var data = JSON.stringify({ v: 1, exported: new Date().toISOString(), settings: settings, trips: trips }, null, 2);
       downloadBlob(new Blob([data], { type: 'application/json' }), 'korjournal-backup-' + todayISO() + '.json');
       settings.backupAt = todayISO(); saveSettings(); renderBackupInfo();
       toast('Säkerhetskopia sparad');
     });
-    $('btnImport').addEventListener('click', function () { $('fileImport').click(); });
-    $('fileImport').addEventListener('change', function () {
+    on('btnImport', 'click', function () { $('fileImport').click(); });
+    on('fileImport', 'change', function () {
       var f = this.files && this.files[0]; if (!f) return;
       var fr = new FileReader();
       fr.onload = function () {
