@@ -35,7 +35,7 @@ Allt som inte är en resa ligger som konstanter högst upp i `app.js`:
 | Förare | GEORGE, EBBA |
 | Bilar | **BMW520D** – 25 kr/mil, 0,7 l/mil · **BUDBIL** – ingen milersättning, 1,0 l/mil |
 | Verksamhet | FILTER, MUSIK |
-| Mottagare | george@airstrategy.se |
+| Mottagare | står medvetet inte i koden – skrivs in per telefon under Admin |
 | Dieselpris | 20,00 kr/l som riktvärde, ändras i adminpanelen |
 
 Lägg till en förare eller ändra en förbrukning genom att ändra `DRIVERS`, `CARS` eller

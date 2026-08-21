@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.8.0';
+  var VER = '4.9.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -26,7 +26,11 @@
     { namn: 'BUDBIL',  nr: '',       mil: 0,  forb: 1.0 }    // företagsbil: bara loggning
   ];
   var VERKSAMHETER = ['FILTER', 'MUSIK'];
-  var DEFAULT_MAIL = 'george@airstrategy.se';
+  /* Mottagaradressen står medvetet inte i koden. Appen laddas ner till
+     vem som helst som besöker adressen, och en mejladress i klartext
+     plockas upp av skräppostbottar. Den skrivs in en gång per telefon
+     under Admin och sparas bara där. */
+  var DEFAULT_MAIL = '';
   var LOCK_CODE = '1934';
   var DEFAULT_DIESEL = 20;   // kr/liter, riktvärde tills ett eget pris läggs in
 
@@ -48,7 +52,7 @@
     if (!carDef(settings.bil) || settings.bil !== carDef(settings.bil).namn) settings.bil = CARS[0].namn;
     /* förvald adress följer med när den ändras i koden, men en adress du
        skrivit in själv i adminpanelen rörs aldrig */
-    if (!settings.mail || !settings.mailManual) settings.mail = DEFAULT_MAIL;
+    if (settings.mail && !settings.mailManual) settings.mail = '';
     if (settings.lock == null) settings.lock = true;   // låst från början
     if (!settings.foretag) settings.foretag = 'AIRFILTER GROUP';
     /* äldre resor sparade bara regnr – knyt dem till rätt bil */
@@ -767,7 +771,7 @@
         toast('Regnummer sparat');
       });
     });
-    $('adminMail').value = settings.mail || DEFAULT_MAIL;
+    $('adminMail').value = settings.mail || '';
     $('adminApi').value = settings.api || '';
   }
 
@@ -796,7 +800,7 @@
 
     set('sendDone', 'hidden', true);
     set('sendForm', 'hidden', false);
-    $('mailToLabel').textContent = settings.mail || 'Ingen mottagare inställd';
+    $('mailToLabel').textContent = settings.mail || 'saknas – fyll i under Admin';
     var serverPa = !!up(settings.api);
     set('btnSendServer', 'hidden', !serverPa);
     set('serverHint', 'hidden', !serverPa);
@@ -1389,9 +1393,10 @@
     });
 
     on('adminMail', 'change', function () {
-      settings.mail = up(this.value) || DEFAULT_MAIL;
-      settings.mailManual = settings.mail !== DEFAULT_MAIL;
-      saveSettings(); toast('Mottagare sparad');
+      settings.mail = up(this.value);
+      settings.mailManual = !!settings.mail;
+      saveSettings(); render();
+      toast(settings.mail ? 'Mottagare sparad' : 'saknas – fyll i under Admin');
     });
     on('adminApi', 'change', function () {
       settings.api = up(this.value);
