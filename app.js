@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.5.1';
+  var VER = '4.6.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -779,6 +779,8 @@
       plist.map(function (p) { return '<option value="' + esc(p) + '">' + esc(p) + '</option>'; }).join('');
     if (settings.person && plist.indexOf(settings.person) >= 0) $('sendPerson').value = settings.person;
 
+    $('sendDone').hidden = true;
+    $('sendForm').hidden = false;
     $('mailToLabel').textContent = settings.mail || 'Ingen mottagare inställd';
     var serverPa = !!up(settings.api);
     $('btnSendServer').hidden = !serverPa;
@@ -951,6 +953,19 @@
            'Körjournalen är bifogad som PDF.\n';
   }
 
+  /* efter utskick byts formuläret mot en bekräftelse, så att det inte
+     ser ut som att samma resor kan skickas in en gång till */
+  var doneIds = [];
+  function showDone(titel, text, sel) {
+    doneIds = (sel || []).map(function (t) { return t.id; });
+    $('doneTitle').textContent = titel;
+    $('doneText').textContent = text;
+    $('btnDoneUndo').hidden = !doneIds.length;
+    $('sendForm').hidden = true;
+    $('sendDone').hidden = false;
+    $('sheetSend').querySelector('.sheet-body').scrollTop = 0;
+  }
+
   function sendPdf() {
     var r = buildPdfBlob();
     if (!r) return;
@@ -962,7 +977,12 @@
 
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({ files: [file], title: subject, text: body })
-        .then(function () { markSent(r.sel); toast(inskickade(r.sel.length) + ' och avbockade'); })
+        .then(function () {
+          markSent(r.sel);
+          showDone(inskickade(r.sel.length),
+            'Rapporten är överlämnad till mejlappen. Tryck Skicka där, om du inte redan gjort det.',
+            r.sel);
+        })
         .catch(function (err) {
           if (err && err.name === 'AbortError') return;
           fallback(r, subject, body);
@@ -1009,8 +1029,9 @@
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok || !data.ok) throw new Error(data.error || ('Servern svarade ' + res.status));
         markSent(r.sel);
-        aterstall(inskickade(r.sel.length) + ' till ' + (data.till || settings.mail));
-        close($('sheetSend'));
+        aterstall('');
+        showDone(inskickade(r.sel.length),
+          'Mejlet är skickat till ' + (data.till || settings.mail) + '.', null);
       });
     }).catch(function (err) {
       aterstall('Kunde inte skicka: ' + err.message + '. Använd mejlappen i stället.');
@@ -1028,7 +1049,8 @@
   function fallback(r, subject, body) {
     downloadBlob(r.blob, r.name);
     markSent(r.sel);
-    toast('PDF sparad – bifoga den i mejlet', 4000);
+    showDone(inskickade(r.sel.length),
+      'PDF:en är nedladdad och mejlet öppnas. Bifoga filen och skicka.', r.sel);
     setTimeout(function () {
       openMail(body + '\n(Bifoga filen ' + r.name + ' från Nedladdningar.)');
     }, 900);
@@ -1359,6 +1381,12 @@
       toast(settings.api ? 'Utskick sker nu direkt via servern' : 'Utskick sker via mejlappen', 4000);
     });
     $('btnSendServer').addEventListener('click', sendViaServer);
+    $('btnDoneClose').addEventListener('click', function () { close($('sheetSend')); });
+    $('btnDoneUndo').addEventListener('click', function () {
+      trips.forEach(function (t) { if (doneIds.indexOf(t.id) >= 0) delete t.sentAt; });
+      saveTrips(); render(); close($('sheetSend'));
+      toast('Markeringen ångrad – resorna ligger kvar att skicka in', 4000);
+    });
     $('sendPeriod').addEventListener('change', updateRecap);
     $('sendPerson').addEventListener('change', updateRecap);
     $('btnMakePdf').addEventListener('click', sendPdf);

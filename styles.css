@@ -117,6 +117,16 @@ button{font:inherit;color:inherit}
 }
 .trip .del:active{background:var(--danger);border-color:var(--danger);color:#fff}
 
+/* bekräftelse efter utskick */
+.done{text-align:center;padding:32px 16px 24px}
+.done-ico{
+  width:72px;height:72px;margin:0 auto 18px;border-radius:50%;
+  background:#e7f4ec;color:var(--ok);font-size:38px;font-weight:800;
+  display:grid;place-items:center;
+}
+.done h3{margin:0 0 10px;font-size:22px;font-weight:800}
+.done p{margin:0;color:var(--ink-2);font-size:15px;line-height:1.45}
+
 .summary .allclear{
   font-size:26px;font-weight:800;line-height:1.1;color:var(--ok);
 }

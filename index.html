@@ -235,6 +235,18 @@
     <span class="link-btn ghost"></span>
   </div>
   <div class="sheet-body">
+
+    <div id="sendDone" hidden>
+      <div class="done">
+        <div class="done-ico">✓</div>
+        <h3 id="doneTitle">Inskickad</h3>
+        <p id="doneText"></p>
+      </div>
+      <button id="btnDoneClose" class="btn btn-primary btn-block">Klar</button>
+      <button id="btnDoneUndo" class="btn btn-ghost btn-block">Blev det inte skickat? Ångra markeringen</button>
+    </div>
+
+    <div id="sendForm">
     <label class="field">
       <span class="lbl">Period</span>
       <select id="sendPeriod" class="inp"></select>
@@ -259,6 +271,7 @@
     <div class="divider"></div>
     <button id="btnCopyTsv" class="btn btn-ghost btn-block">Kopiera rader för Excel</button>
     <button id="btnPreviewPdf" class="btn btn-ghost btn-block">Förhandsgranska PDF</button>
+    </div>
   </div>
 </section>
 
