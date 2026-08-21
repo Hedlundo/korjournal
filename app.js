@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.5.0';
+  var VER = '4.5.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -261,7 +261,7 @@
         '<span class="mid"><b>' + esc(t.kund || (oppen ? 'Påbörjad resa' : '—')) + '</b>' +
         '<span>' + (t.tidStart ? t.tidStart + ' · ' : '') + esc(t.adressStart || '') +
         (oppen ? ' → …' : ' → ' + esc(t.adressStopp || '')) + '</span></span>' +
-        '<span class="km">' + (oppen ? '<i class="go">Avsluta</i>' : numOf(t.km) + ' <i>km</i>') +
+        '<span class="km">' + (oppen ? '<i class="go">Slutför</i>' : numOf(t.km) + ' <i>km</i>') +
         (skickad ? '<i class="flag">✓ inskickad</i>' : '') +
         '</span>' +
         (skickad ? '<button type="button" class="del" data-del="' + t.id + '" title="Ta bort inskickad resa">−</button>' : '') +
@@ -613,7 +613,7 @@
       });
     } else {
       close($('sheetTrip'));
-      toast(pagaende ? 'Resan är påbörjad – avsluta den när du är framme' : 'Resan sparad · ' + f.km + ' km',
+      toast(pagaende ? 'Resan är påbörjad – slutför den när du är framme' : 'Resan sparad · ' + f.km + ' km',
             pagaende ? 3500 : 2200);
     }
   }

@@ -15,10 +15,10 @@ dig. Summan är det som hamnar i journalen.
 Klockslaget vid start fylls i automatiskt när du öppnar en ny resa, och tiden framme sätts när
 du sparar den avslutad. Båda går att ändra.
 
-## Påbörja nu, avsluta senare
+## Påbörja nu, slutför senare
 
 En resa kan sparas med bara startadress och startmätarställning. Den hamnar överst i listan med
-gul ram och knappen *Avsluta* – öppna den när du är framme och fyll i resten. Påbörjade resor
+gul ram och knappen *Slutför* – öppna den när du är framme och fyll i resten. Påbörjade resor
 följer aldrig med i ett utskick.
 
 KM räknas ut automatiskt. Mätarställning start och adress start förifylls från förra resan.
