@@ -377,8 +377,13 @@ textarea.inp{padding:12px 14px;min-height:88px;line-height:1.35}
   background:var(--card);border:1px solid var(--line);border-radius:var(--r);
   padding:14px 16px;margin-bottom:18px;
 }
-.recap .row{display:flex;justify-content:space-between;padding:5px 0;font-size:15px}
-.recap .row b{font-variant-numeric:tabular-nums}
+.recap .row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  gap:14px;padding:5px 0;font-size:15px;
+}
+.recap .row span{min-width:0}
+/* beloppet ska aldrig brytas – texten till vänster får radbrytas i stället */
+.recap .row b{font-variant-numeric:tabular-nums;white-space:nowrap;flex:0 0 auto;text-align:right}
 .recap .row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700;font-size:17px}
 .recap .row.sub{border-top:1px solid var(--line);margin-top:4px;padding-top:8px;font-weight:700}
 .recap .head{
