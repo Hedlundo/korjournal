@@ -207,9 +207,16 @@ Låset är **på från början**. Appen frågar efter koden i `LOCK_CODE` (`app.
 startas. Admin → *Lägg till Face ID* registrerar telefonens biometri via WebAuthn, så slipper du
 knappa in koden – den finns kvar som reserv. *Ta bort låset* stänger av det helt.
 
-Koden ligger i klartext i källkoden. Repot är publikt, så vem som helst kan läsa den – vilket
-spelar mindre roll än det låter, eftersom ingen kommer åt din data via webbadressen ändå.
-Behöver koden vara hemlig måste repot bli privat.
+Koden lagras som ett SHA-256-värde i `LOCK_HASH`, inte i klartext, och fem felaktiga försök
+bromsas med 30 sekunders spärr. Kontrollen sker ändå i telefonen, så en tekniskt kunnig person
+kan ta sig förbi den. Det spelar mindre roll än det låter: journalen ligger bara på enheten, så
+det finns ingenting att komma åt via webbadressen.
+
+Byt kod genom att räkna fram ett nytt värde och ersätta `LOCK_HASH`:
+
+```bash
+node -e "console.log(require('crypto').createHash('sha256').update('korjournal-airfilter-2026'+'NYKOD').digest('base64'))"
+```
 
 **Vad låset skyddar mot:** att någon som får tag i den olåsta telefonen läser journalen.
 **Vad det inte skyddar mot:** låset kontrolleras i webbläsaren, utan server som verifierar

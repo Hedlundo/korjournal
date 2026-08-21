@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.9.0';
+  var VER = '4.9.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -31,7 +31,12 @@
      plockas upp av skräppostbottar. Den skrivs in en gång per telefon
      under Admin och sparas bara där. */
   var DEFAULT_MAIL = '';
-  var LOCK_CODE = '1934';
+  /* Koden lagras som ett kontrollvärde, inte i klartext, så att den inte
+     går att läsa rakt av i källkoden. Kontrollen sker ändå i telefonen –
+     det skyddar mot nyfikna, inte mot någon som verkligen vill in. */
+  var LOCK_SALT = 'korjournal-airfilter-2026';
+  var LOCK_HASH = '5pvt4yRcAK9Suq4PyEhnixEnBUGIz+Eou0kqGkRWIqc=';
+  var lockFel = 0, lockSparr = 0;
   var DEFAULT_DIESEL = 20;   // kr/liter, riktvärde tills ett eget pris läggs in
 
   function carDef(namn) {
@@ -656,6 +661,12 @@
     for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
     return a;
   }
+  function kodStammer(kod) {
+    if (!window.crypto || !crypto.subtle) return Promise.resolve(false);
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(LOCK_SALT + kod))
+      .then(b64).then(function (h) { return h === LOCK_HASH; });
+  }
+
   function bioSupported() {
     return !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
   }
@@ -1324,8 +1335,25 @@
       $('lockCode').focus();
     });
     on('lockCodeOk', 'click', function () {
-      if (up($('lockCode').value) === LOCK_CODE) { $('lockCode').value = ''; hideLock(); }
-      else { $('lockMsg').textContent = 'Fel kod.'; $('lockCode').value = ''; }
+      var nu = Date.now();
+      if (nu < lockSparr) {
+        $('lockMsg').textContent = 'För många försök. Vänta ' +
+          Math.ceil((lockSparr - nu) / 1000) + ' sekunder.';
+        return;
+      }
+      var kod = up($('lockCode').value);
+      $('lockCode').value = '';
+      kodStammer(kod).then(function (ok) {
+        if (ok) { lockFel = 0; hideLock(); return; }
+        lockFel++;
+        if (lockFel >= 5) {
+          lockSparr = Date.now() + 30000;   // bromsa gissningar
+          lockFel = 0;
+          $('lockMsg').textContent = 'För många försök. Vänta 30 sekunder.';
+        } else {
+          $('lockMsg').textContent = 'Fel kod.';
+        }
+      });
     });
     on('lockCode', 'keydown', function (ev) {
       if (ev.key === 'Enter') $('lockCodeOk').click();
