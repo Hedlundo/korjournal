@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.3.2';
+  var VER = '4.4.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -15,7 +15,8 @@
 
   /* ---------------- fasta val ----------------
      Föraren ska välja, inte konfigurera. Allt nedan ändras i koden. */
-  var DRIVERS = ['EBBA', 'GEORGE'];
+  /* ordningen matchar bilarna nedan: George kör BMW:n, Ebba budbilen */
+  var DRIVERS = ['GEORGE', 'EBBA'];
   var CARS = [
     { namn: 'BMW520D', nr: 'WXE84R', mil: 25, forb: 0.7 },   // privat bil: ger milersättning
     { namn: 'BUDBIL',  nr: '',       mil: 0,  forb: 1.0 }    // företagsbil: bara loggning
@@ -817,7 +818,7 @@
     });
     var fuelCars = Object.keys(perCar);
     if (fuelCars.length) {
-      lines.push({ head: 'Beräknad bränslekostnad (bokföring)' });
+      lines.push({ head: 'Beräknad bränslekostnad' });
       fuelCars.forEach(function (nr) {
         lines.push({
           label: nr + ' - ' + dec(perCar[nr].liter, 1) + ' l (' + dec(forbFor(nr), 2) + ' l/mil)',
