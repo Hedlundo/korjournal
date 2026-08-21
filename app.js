@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.4.0';
+  var VER = '4.5.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -210,47 +210,80 @@
       list.innerHTML = '<div class="empty"><b>Tom körjournal</b>Tryck på <b style="display:inline">+ Ny resa</b> för att registrera din första resa.</div>';
       return;
     }
-    var thisMonth = monthKey(todayISO()), km = 0, cnt = 0, ers = 0, utlagg = 0;
+
+    /* Toppkortet handlar bara om det som återstår att skicka in.
+       Avslutade resor som redan är inskickade räknas inte, och
+       påbörjade resor kan inte skickas förrän de är avslutade. */
+    var km = 0, cnt = 0, ers = 0, utlagg = 0, pagaende = 0;
     trips.forEach(function (t) {
-      if (monthKey(t.datum) !== thisMonth) return;
+      if (isOpen(t)) { pagaende++; return; }
+      if (t.sentAt) return;
       km += numOf(t.km); cnt++;
       ers += ersFor(t);
       utlagg += numOf(t.trangsel);
     });
-    $('summary').innerHTML =
-      '<div class="big">' + km + '<span>km</span></div>' +
-      '<div class="meta">' + MONTHS[+thisMonth.slice(5, 7) - 1] + ' · ' + resor(cnt) + '</div>' +
-      (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '') +
-      '<button type="button" id="summarySend" class="btn btn-primary send-top">Skicka in körjournal</button>';
-    $('summarySend').addEventListener('click', openSend);
+
+    if (cnt) {
+      $('summary').innerHTML =
+        '<div class="big">' + km + '<span>km</span></div>' +
+        '<div class="meta">' + resor(cnt) + ' att skicka in' +
+        (pagaende ? ' · ' + pagaende + ' påbörjad' + (pagaende === 1 ? '' : 'e') : '') + '</div>' +
+        (ers || utlagg ? '<div class="pay">' + kr(ers + utlagg) + '<span>att ersätta</span></div>' : '') +
+        '<button type="button" id="summarySend" class="btn btn-primary send-top">Skicka in körjournal</button>';
+      $('summarySend').addEventListener('click', openSend);
+    } else {
+      var manad = monthKey(todayISO()), mkm = 0;
+      trips.forEach(function (t) { if (monthKey(t.datum) === manad) mkm += numOf(t.km); });
+      $('summary').innerHTML =
+        '<div class="allclear">✓ Allt inskickat</div>' +
+        '<div class="meta">' + MONTHS[+manad.slice(5, 7) - 1] + ' · ' + mkm + ' km' +
+        (pagaende ? ' · ' + pagaende + ' påbörjad' + (pagaende === 1 ? '' : 'e') : '') + '</div>';
+    }
 
     var html = '', curM = null;
     s.forEach(function (t) {
       var mk = monthKey(t.datum);
       if (mk !== curM) {
         curM = mk;
-        var mkm = 0, mc = 0, mej = 0;
+        var mkm2 = 0, mc = 0, mej = 0;
         trips.forEach(function (x) {
           if (monthKey(x.datum) !== mk) return;
-          mkm += numOf(x.km); mc++; if (!x.sentAt) mej++;
+          mkm2 += numOf(x.km); mc++; if (!x.sentAt && !isOpen(x)) mej++;
         });
         html += '<div class="month-head"><span>' + monthLabel(mk) + '</span>' +
-                '<span class="tot">' + mkm + ' km' +
-                (mej ? ' · <em>' + mej + ' ej inskickade</em>' : ' · allt inskickat') + '</span></div>';
+                '<span class="tot">' + mkm2 + ' km' +
+                (mej ? ' · <em>' + mej + (mej === 1 ? ' ej inskickad' : ' ej inskickade') + '</em>'
+                     : ' · allt inskickat') + '</span></div>';
       }
-      var d = t.datum.split('-'), oppen = isOpen(t);
-      html += '<button class="trip' + (oppen ? ' open' : '') + '" data-id="' + t.id + '">' +
+      var d = t.datum.split('-'), oppen = isOpen(t), skickad = !!t.sentAt;
+      html += '<div class="trip' + (oppen ? ' open' : skickad ? ' sent' : '') + '" data-id="' + t.id + '">' +
         '<span class="d"><b>' + d[2] + '</b><i>' + weekday(t.datum) + '</i></span>' +
         '<span class="mid"><b>' + esc(t.kund || (oppen ? 'Påbörjad resa' : '—')) + '</b>' +
         '<span>' + (t.tidStart ? t.tidStart + ' · ' : '') + esc(t.adressStart || '') +
         (oppen ? ' → …' : ' → ' + esc(t.adressStopp || '')) + '</span></span>' +
         '<span class="km">' + (oppen ? '<i class="go">Avsluta</i>' : numOf(t.km) + ' <i>km</i>') +
-        (t.sentAt ? '<i class="flag" title="Inskickad ' + t.sentAt + '">✓ inskickad</i>' : '') +
-        '</span></button>';
+        (skickad ? '<i class="flag">✓ inskickad</i>' : '') +
+        '</span>' +
+        (skickad ? '<button type="button" class="del" data-del="' + t.id + '" title="Ta bort inskickad resa">−</button>' : '') +
+        '</div>';
     });
     list.innerHTML = html;
+
     Array.prototype.forEach.call(list.querySelectorAll('.trip'), function (b) {
       b.addEventListener('click', function () { openTrip(b.getAttribute('data-id')); });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('.del'), function (b) {
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var id = b.getAttribute('data-del');
+        var t = trips.filter(function (x) { return x.id === id; })[0];
+        if (!t) return;
+        if (!confirm('Ta bort den inskickade resan ' + t.datum + ' ' + (t.kund || '') +
+                     '?\nDen finns kvar i PDF:en som redan skickats.')) return;
+        trips = trips.filter(function (x) { return x.id !== id; });
+        saveTrips(); render();
+        toast('Resan borttagen');
+      });
     });
   }
   function esc(s) {
@@ -1255,6 +1288,15 @@
     });
     $('adminSok').addEventListener('input', renderAdmin);
     $('btnAdminTsv').addEventListener('click', function () { copyText(adminTsv(), 'Loggen kopierad'); });
+    $('btnRensa').addEventListener('click', function () {
+      var skickade = trips.filter(function (t) { return !!t.sentAt; });
+      if (!skickade.length) { toast('Det finns inga inskickade resor att rensa'); return; }
+      if (!confirm('Ta bort ' + resor(skickade.length) + ' som redan skickats in?\n' +
+                   'De finns kvar i PDF:erna som lämnats.')) return;
+      trips = trips.filter(function (t) { return !t.sentAt; });
+      saveTrips(); render(); renderAdmin(); renderBackupInfo();
+      toast(resor(skickade.length) + ' borttagna');
+    });
     $('btnAddPris').addEventListener('click', function () {
       var d = $('prisDatum').value, p = numOf($('prisVarde').value);
       if (!d || !p) { toast('Fyll i datum och pris'); return; }

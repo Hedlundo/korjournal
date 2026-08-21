@@ -106,6 +106,21 @@ button{font:inherit;color:inherit}
 .trip.open{border-color:var(--yellow-dk);border-width:2px;background:#fffdf2}
 .trip.open .mid b{color:var(--ink-2)}
 
+/* inskickad: dämpad rad med grön bock och ett minus för att rensa */
+.trip.sent{background:#f7faf8;border-color:#dbe8e0}
+.trip.sent .d b,.trip.sent .km{color:var(--ink-2)}
+.trip .del{
+  flex:0 0 34px;width:34px;height:34px;margin-left:2px;
+  border:1px solid var(--line);border-radius:50%;background:var(--card);
+  color:var(--ink-3);font-size:22px;line-height:1;cursor:pointer;
+  display:grid;place-items:center;
+}
+.trip .del:active{background:var(--danger);border-color:var(--danger);color:#fff}
+
+.summary .allclear{
+  font-size:26px;font-weight:800;line-height:1.1;color:var(--ok);
+}
+
 /* ---------- admin ---------- */
 .bil-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
