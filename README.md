@@ -8,7 +8,7 @@ Ingen server, ingen inloggning – all data ligger i telefonen (localStorage).
 KUND · KONTAKT · SYFTE · ORDERNR · VERKSAMHET · DATUM · TID · MÄTARSTÄLLNING START ·
 MÄTARSTÄLLNING STOPP · KM · ADRESS START · ADRESS STOPP · TRÄNGSELSKATT · PERSON · REGNR
 
-**Trängselskatten läggs in en passage i taget.** Skriv beloppet, tryck *+ Passage*, upprepa.
+**Trängselskatten läggs in en passage i taget.** Skriv beloppet, tryck *+ Lägg till passage*, upprepa.
 Varje passage blir en gul bricka som går att ta bort med ett tryck, och appen summerar dem åt
 dig. Summan är det som hamnar i journalen.
 
