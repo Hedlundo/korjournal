@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.6.0';
+  var VER = '4.6.1';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -1382,6 +1382,18 @@
     });
     $('btnSendServer').addEventListener('click', sendViaServer);
     $('btnDoneClose').addEventListener('click', function () { close($('sheetSend')); });
+    $('btnForceUpdate').addEventListener('click', function () {
+      toast('Hämtar senaste versionen…', 4000);
+      var klart = function () { location.reload(true); };
+      if (!('serviceWorker' in navigator)) { klart(); return; }
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }).then(function () {
+        return caches.keys().then(function (ks) {
+          return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+        });
+      }).then(klart).catch(klart);
+    });
     $('btnDoneUndo').addEventListener('click', function () {
       trips.forEach(function (t) { if (doneIds.indexOf(t.id) >= 0) delete t.sentAt; });
       saveTrips(); render(); close($('sheetSend'));
@@ -1423,8 +1435,20 @@
       this.value = '';
     });
 
+    /* Ny version ska slå igenom av sig själv. Telefonen kunde annars bli
+       kvar på en gammal kopia tills cachen råkade rensas. */
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        reg.update();
+        setInterval(function () { reg.update(); }, 60 * 60 * 1000);
+      }).catch(function () {});
+
+      var laddatOm = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (laddatOm) return;          // bara en omladdning, aldrig en loop
+        laddatOm = true;
+        location.reload();
+      });
     }
     /* utan detta får webbläsaren slänga lagringen när utrymmet tryter */
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
