@@ -74,6 +74,11 @@ button{font:inherit;color:inherit}
 }
 .summary .pay span{font-size:13px;font-weight:600;color:#c9ccd2;margin-left:8px}
 .summary .send-top{width:100%;margin-top:14px;min-height:52px}
+.summary .ghost-top{
+  background:transparent;border:1px solid #ffffff44;color:#fff;
+  font-size:15px;font-weight:600;min-height:46px;
+}
+.actionbar .btn{flex:1}
 
 .month-head{
   display:flex;justify-content:space-between;align-items:baseline;

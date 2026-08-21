@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.6.2';
+  var VER = '4.7.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -241,7 +241,9 @@
       $('summary').innerHTML =
         '<div class="allclear">✓ Allt inskickat</div>' +
         '<div class="meta">' + MONTHS[+manad.slice(5, 7) - 1] + ' · ' + mkm + ' km' +
-        (pagaende ? ' · ' + pagaende + ' påbörjad' + (pagaende === 1 ? '' : 'e') : '') + '</div>';
+        (pagaende ? ' · ' + pagaende + ' påbörjad' + (pagaende === 1 ? '' : 'e') : '') + '</div>' +
+        '<button type="button" id="summarySend" class="btn send-top ghost-top">Rapporter och tidigare utskick</button>';
+      on('summarySend', 'click', openSend);
     }
 
     var html = '', curM = null;

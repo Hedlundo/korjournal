@@ -166,6 +166,8 @@ Tre skydd finns:
 
 Varje resa får ett datum i `sentAt` när den följt med i ett utskick. Det syns på tre ställen:
 
+* toppkortet, som bara räknar det som inte skickats in – är allt inskickat står det så, och
+  utskicksknappen försvinner
 * månadsraden i listan: *"1 741 km · 2 ej inskickade"*
 * en grön bock på raden för resor som är inskickade
 * en banner högst upp i resan när du öppnar den, med *Markera som ej inskickad* om du behöver
