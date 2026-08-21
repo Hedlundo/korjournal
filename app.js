@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.7.1';
+  var VER = '4.8.0';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -309,8 +309,11 @@
     if (!t) {
       t = preset || {};
       if (!t.datum) t.datum = todayISO();
-      if (t.matStart == null) t.matStart = prev ? prev.matStopp : '';
-      if (t.adressStart == null) t.adressStart = prev ? prev.adressStopp : '';
+      /* En ny resa börjar tomt. Förra resans slutvärden erbjuds som
+         förslag i stället, så att mätarkedjan går att hålla obruten
+         utan att något fylls i åt dig. */
+      if (t.matStart == null) t.matStart = '';
+      if (t.adressStart == null) t.adressStart = '';
       if (!t.verksamhet) t.verksamhet = VERKSAMHETER[0];
     }
 
@@ -340,9 +343,15 @@
     delete $('sheetTrip').dataset.startLat;
     delete $('sheetTrip').dataset.stopLat;
     $('calcHint').textContent = '';
-    $('startHint').textContent = (!id && prev && t.matStart && t.matStart === prev.matStopp)
-      ? 'Ifylld från förra resan, som slutade på ' + prev.matStopp + '.'
-      : 'Läs av mätaren innan du kör.';
+    if (!id && prev && prev.matStopp) {
+      $('startHint').textContent = 'Förra resan slutade på ' + prev.matStopp + '.';
+      chipRow($('startChips'), [String(prev.matStopp)], function (v) {
+        $('fMatStart').value = v; calcKm();
+      });
+    } else {
+      $('startHint').textContent = 'Läs av mätaren innan du kör.';
+      chipRow($('startChips'), []);
+    }
     $('fTidStart').value = t.tidStart || (id ? '' : nowHM());
     $('fTidStopp').value = t.tidStopp || '';
     $('fOrdernr').value = t.ordernr || '';

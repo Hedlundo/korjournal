@@ -21,7 +21,9 @@ En resa kan sparas med bara startadress och startmätarställning. Den hamnar ö
 gul ram och knappen *Slutför* – öppna den när du är framme och fyll i resten. Påbörjade resor
 följer aldrig med i ett utskick.
 
-KM räknas ut automatiskt. Mätarställning start och adress start förifylls från förra resan.
+KM räknas ut automatiskt. En ny resa börjar med tomt formulär – bara datum, klockslag och de tre
+knappraderna är ifyllda. Förra resans slutvärde erbjuds som ett förslag under mätarställningen,
+så mätarkedjan går att hålla obruten med ett tryck utan att något fylls i åt dig.
 DATUM skrivs som ÅÅMMDD i PDF/Excel-exporten, precis som i det befintliga Excel-arket.
 
 ## Fasta val – föraren konfigurerar ingenting
