@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var VER = '4.9.1';
+  var VER = '4.9.2';
   var K_TRIPS = 'kj.trips.v1', K_SET = 'kj.settings.v1';
   var MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni',
                 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
@@ -776,11 +776,13 @@
         '" placeholder="regnr" autocapitalize="characters"></div>';
     }).join('');
     Array.prototype.forEach.call($('bilList').querySelectorAll('input'), function (inp) {
-      inp.addEventListener('change', function () {
+      var spara = function (visaToast) {
         settings.regnrs[inp.getAttribute('data-bil')] = up(inp.value).toUpperCase();
         saveSettings(); renderAdmin(); render();
-        toast('Regnummer sparat');
-      });
+        if (visaToast) toast('Regnummer sparat');
+      };
+      inp.addEventListener('input', function () { spara(false); });
+      inp.addEventListener('change', function () { spara(true); });
     });
     $('adminMail').value = settings.mail || '';
     $('adminApi').value = settings.api || '';
@@ -1420,17 +1422,27 @@
       });
     });
 
-    on('adminMail', 'change', function () {
-      settings.mail = up(this.value);
+    /* Spara vid varje tangenttryck. Bara 'change' räcker inte – stänger
+       man panelen direkt efter sista tecknet hinner fältet aldrig tappa
+       fokus, och det som skrevs försvinner. */
+    function sparaMail(visaToast) {
+      settings.mail = up($('adminMail').value);
       settings.mailManual = !!settings.mail;
       saveSettings(); render();
-      toast(settings.mail ? 'Mottagare sparad' : 'saknas – fyll i under Admin');
-    });
-    on('adminApi', 'change', function () {
-      settings.api = up(this.value);
+      if (visaToast) toast(settings.mail ? 'Mottagare sparad' : 'Ingen mottagare inställd');
+    }
+    on('adminMail', 'input', function () { sparaMail(false); });
+    on('adminMail', 'change', function () { sparaMail(true); });
+
+    function sparaApi(visaToast) {
+      settings.api = up($('adminApi').value);
       saveSettings();
-      toast(settings.api ? 'Utskick sker nu direkt via servern' : 'Utskick sker via mejlappen', 4000);
-    });
+      if (visaToast) {
+        toast(settings.api ? 'Utskick sker nu direkt via servern' : 'Utskick sker via mejlappen', 4000);
+      }
+    }
+    on('adminApi', 'input', function () { sparaApi(false); });
+    on('adminApi', 'change', function () { sparaApi(true); });
     on('btnSendServer', 'click', sendViaServer);
     on('btnDoneClose', 'click', function () { close($('sheetSend')); });
     on('btnForceUpdate', 'click', function () {
